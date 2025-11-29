@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import CatAvatar from '@/components/CatAvatar'
 import type { User } from '@supabase/supabase-js'
 
 interface FoodRecord {
@@ -99,31 +100,44 @@ export default function RecordsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center relative overflow-hidden">
+        <div className="fixed top-20 left-1/4 h-96 w-96 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="fixed bottom-20 right-1/4 h-96 w-96 bg-gradient-to-r from-secondary/15 to-primary/15 rounded-full blur-3xl animate-pulse-slow" style={{animationDelay: '2s'}}></div>
+        <div className="text-center glass rounded-3xl p-8 animate-scale-in">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-20 w-20 border-4 border-primary/30 border-t-primary mx-auto mb-4"></div>
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary to-accent opacity-20 animate-glow"></div>
+          </div>
+          <p className="text-foreground font-medium animate-pulse">載入中...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 -z-10 bg-grid opacity-10"></div>
+      <div className="fixed top-20 left-1/4 h-96 w-96 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl animate-pulse-slow"></div>
+      <div className="fixed bottom-20 right-1/4 h-96 w-96 bg-gradient-to-r from-secondary/8 to-primary/8 rounded-full blur-3xl animate-pulse-slow" style={{animationDelay: '2s'}}></div>
+      
       {/* Navigation */}
-      <nav className="bg-white shadow border-b">
+      <nav className="glass border-b border-primary/20 sticky top-0 z-10 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-16 animate-slide-up">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-xl font-semibold text-gray-900 hover:text-blue-600">
+              <Link href="/dashboard" className="text-xl font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent hover:scale-105 transition-transform duration-300">
                 貓咪乾物質計算器
               </Link>
-              <span className="text-gray-400">|</span>
-              <span className="text-gray-600">計算記錄</span>
+              <span className="text-muted-foreground">|</span>
+              <span className="text-muted-foreground">計算記錄</span>
             </div>
             <div className="flex items-center space-x-4">
               <Link href="/calculator">
-                <Button variant="outline">新增計算</Button>
+                <Button variant="outline" className="glass border-primary/30 hover:bg-primary/10 transition-all duration-300 hover:scale-105">新增計算</Button>
               </Link>
               <Link href="/dashboard">
-                <Button variant="outline">返回首頁</Button>
+                <Button variant="outline" className="glass border-primary/30 hover:bg-primary/10 transition-all duration-300 hover:scale-105">返回首頁</Button>
               </Link>
             </div>
           </div>
@@ -135,53 +149,58 @@ export default function RecordsPage() {
         <div className="px-4 py-6 sm:px-0">
           
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">計算記錄</h1>
-            <p className="text-gray-600 mt-1">查看您的所有營養計算記錄</p>
+          <div className="mb-8 animate-slide-up">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">計算記錄</h1>
+            <p className="text-muted-foreground mt-1">查看您的所有營養計算記錄</p>
           </div>
 
           {/* Records List */}
           {records.length === 0 ? (
-            <Card>
+            <Card className="glass border-primary/20 animate-scale-in">
               <CardContent className="py-12">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    📊
+                  <div className="relative mb-8">
+                    <div className="w-16 h-16 glass rounded-full flex items-center justify-center mx-auto animate-float border-primary/30">
+                      📊
+                    </div>
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-20 h-20 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-2xl"></div>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <h3 className="text-lg font-medium text-foreground mb-2">
                     還沒有計算記錄
                   </h3>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-muted-foreground mb-4">
                     開始您的第一次營養計算
                   </p>
                   <Link href="/calculator">
-                    <Button>開始計算</Button>
+                    <Button className="gradient-primary text-white hover:scale-105 transition-all duration-300 animate-glow shadow-lg">開始計算</Button>
                   </Link>
                 </div>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-4">
-              {records.map((record) => (
-                <Card key={record.id} className="hover:shadow-md transition-shadow">
+              {records.map((record, index) => (
+                <Card key={record.id} className="glass border-primary/20 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 hover:scale-[1.02] animate-slide-up group" style={{animationDelay: `${index * 0.1}s`}}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <CardTitle className="flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-2 text-foreground group-hover:text-primary transition-colors duration-300">
                           {record.brand_name} - {record.product_name}
                           {record.cats && (
-                            <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                              🐱 {record.cats.name}
+                            <span className="text-sm text-primary bg-gradient-to-r from-primary/20 to-accent/20 px-2 py-1 rounded border border-primary/30 flex items-center gap-1">
+                              <CatAvatar avatarId="cat-1" size="sm" />
+                              {record.cats.name}
                             </span>
                           )}
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-muted-foreground">
                           {new Date(record.created_at).toLocaleString('zh-TW')}
                         </CardDescription>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="hover:scale-110 transition-transform duration-300"
                         onClick={() => toggleFavorite(record.id, record.favorited)}
                       >
                         {record.favorited ? '⭐' : '☆'}
@@ -190,25 +209,25 @@ export default function RecordsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-blue-50 p-3 rounded-lg">
-                        <div className="text-xs text-blue-600 font-medium">乾物質含量</div>
-                        <div className="text-lg font-bold text-blue-900">{record.dry_matter_content}%</div>
+                      <div className="bg-gradient-to-br from-primary/10 to-primary/20 p-3 rounded-xl border border-primary/30 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300">
+                        <div className="text-xs text-primary font-medium">乾物質含量</div>
+                        <div className="text-lg font-bold text-primary">{record.dry_matter_content}%</div>
                       </div>
-                      <div className="bg-green-50 p-3 rounded-lg">
-                        <div className="text-xs text-green-600 font-medium">DM 蛋白質</div>
-                        <div className="text-lg font-bold text-green-900">{record.dm_protein}%</div>
+                      <div className="bg-gradient-to-br from-success/10 to-success/20 p-3 rounded-xl border border-success/30 hover:shadow-lg hover:shadow-success/20 transition-all duration-300">
+                        <div className="text-xs text-success font-medium">DM 蛋白質</div>
+                        <div className="text-lg font-bold text-success">{record.dm_protein}%</div>
                       </div>
-                      <div className="bg-orange-50 p-3 rounded-lg">
-                        <div className="text-xs text-orange-600 font-medium">DM 脂肪</div>
-                        <div className="text-lg font-bold text-orange-900">{record.dm_fat}%</div>
+                      <div className="bg-gradient-to-br from-secondary/10 to-secondary/20 p-3 rounded-xl border border-secondary/30 hover:shadow-lg hover:shadow-secondary/20 transition-all duration-300">
+                        <div className="text-xs text-secondary font-medium">DM 脂肪</div>
+                        <div className="text-lg font-bold text-secondary">{record.dm_fat}%</div>
                       </div>
-                      <div className="bg-purple-50 p-3 rounded-lg">
-                        <div className="text-xs text-purple-600 font-medium">DM 纖維</div>
-                        <div className="text-lg font-bold text-purple-900">{record.dm_fiber}%</div>
+                      <div className="bg-gradient-to-br from-accent/10 to-accent/20 p-3 rounded-xl border border-accent/30 hover:shadow-lg hover:shadow-accent/20 transition-all duration-300">
+                        <div className="text-xs text-accent font-medium">DM 纖維</div>
+                        <div className="text-lg font-bold text-accent">{record.dm_fiber}%</div>
                       </div>
                     </div>
                     
-                    <div className="mt-4 pt-4 border-t text-sm text-gray-600">
+                    <div className="mt-4 pt-4 border-t border-primary/20 text-sm text-muted-foreground">
                       原始數值：蛋白質 {record.protein_percent}% • 脂肪 {record.fat_percent}% • 
                       纖維 {record.fiber_percent}% • 灰分 {record.ash_percent}% • 水分 {record.moisture_percent}%
                     </div>

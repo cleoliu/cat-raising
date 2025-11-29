@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import CatAvatar from './CatAvatar'
 
 export default function BottomNav() {
   const pathname = usePathname()
@@ -14,16 +15,10 @@ export default function BottomNav() {
       activeIcon: '📦'
     },
     {
-      href: '/calculator',
-      label: '計算機',
-      icon: '🧮',
-      activeIcon: '🧮'
-    },
-    {
       href: '/cats',
       label: '管理貓咪',
-      icon: '🐱',
-      activeIcon: '🐱'
+      icon: <CatAvatar avatarId="cat-1" size="sm" />,
+      activeIcon: <CatAvatar avatarId="cat-1" size="sm" />
     }
   ]
 
@@ -42,9 +37,9 @@ export default function BottomNav() {
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
-              <span className="text-xl mb-1">
+              <div className="mb-1 flex items-center justify-center">
                 {isActive ? item.activeIcon : item.icon}
-              </span>
+              </div>
               <span className={`text-xs font-medium ${
                 isActive ? 'text-blue-600' : 'text-gray-600'
               }`}>

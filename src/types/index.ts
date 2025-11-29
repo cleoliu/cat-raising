@@ -12,7 +12,9 @@ export interface Cat {
   user_id: string
   name: string
   age: number
+  birthday?: string
   weight: number
+  avatar_id?: string
   created_at: string
   updated_at: string
 }

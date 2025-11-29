@@ -14,7 +14,9 @@ CREATE TABLE IF NOT EXISTS public.cats (
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
     name VARCHAR(100) NOT NULL,
     age INTEGER NOT NULL CHECK (age >= 0 AND age <= 30),
+    birthday DATE,
     weight DECIMAL(5,2) NOT NULL CHECK (weight > 0),
+    avatar_id VARCHAR(20) DEFAULT 'cat-1',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

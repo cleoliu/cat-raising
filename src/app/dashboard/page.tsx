@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
+import CatAvatar from '@/components/CatAvatar'
+import { Trash2, PawPrint, Calculator } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
 interface Cat {
@@ -14,6 +16,7 @@ interface Cat {
   name: string
   age: number
   weight: number
+  avatar_id?: string
   created_at: string
 }
 
@@ -118,6 +121,31 @@ function DashboardContent() {
     }
   }
 
+  const deleteRecord = async (recordId: string, recordName: string) => {
+    if (!confirm(`確定要刪除「${recordName}」這筆計算記錄嗎？此操作無法復原。`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('food_calculations')
+        .delete()
+        .eq('id', recordId)
+
+      if (error) {
+        console.error('Error deleting record:', error)
+        alert('刪除失敗：' + error.message)
+        return
+      }
+
+      // Update local state
+      setRecords(records.filter(record => record.id !== recordId))
+    } catch (error: any) {
+      console.error('Error deleting record:', error)
+      alert('刪除失敗：' + error.message)
+    }
+  }
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { user }, error } = await supabase.auth.getUser()
@@ -169,10 +197,15 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">載入中...</p>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center relative overflow-hidden">
+        <div className="fixed top-20 left-1/4 h-96 w-96 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="fixed bottom-20 right-1/4 h-96 w-96 bg-gradient-to-r from-secondary/15 to-primary/15 rounded-full blur-3xl animate-pulse-slow" style={{animationDelay: '2s'}}></div>
+        <div className="text-center glass rounded-3xl p-8 animate-scale-in">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-20 w-20 border-4 border-primary/30 border-t-primary mx-auto mb-4"></div>
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary to-accent opacity-20 animate-glow"></div>
+          </div>
+          <p className="text-foreground font-medium animate-pulse">載入中...</p>
         </div>
       </div>
     )
@@ -183,31 +216,50 @@ function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 pb-20 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 -z-10 bg-grid opacity-10"></div>
+      <div className="fixed top-20 left-1/4 h-96 w-96 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl animate-pulse-slow"></div>
+      <div className="fixed bottom-20 right-1/4 h-96 w-96 bg-gradient-to-r from-secondary/8 to-primary/8 rounded-full blur-3xl animate-pulse-slow" style={{animationDelay: '2s'}}></div>
+      
       {/* Header */}
-      <div className="bg-white border-b border-blue-100 sticky top-0 z-10">
+      <div className="glass border-b border-primary/20 sticky top-0 z-10 backdrop-blur-lg">
         <div className="px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 animate-slide-up">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">營養產品</h1>
-              <p className="text-sm text-gray-600">管理貓咪的營養記錄</p>
+              <h1 className="text-xl font-bold text-foreground bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">營養產品</h1>
+              <p className="text-sm text-muted-foreground">管理貓咪的營養記錄</p>
             </div>
-            <Button variant="outline" onClick={handleLogout} className="text-xs px-3 py-1">
-              登出
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link href="/calculator">
+                <Button className="gradient-primary text-white px-4 py-2 rounded-xl text-sm hover:scale-105 transition-all duration-300 animate-glow shadow-lg">
+                  <Calculator className="h-4 w-4 mr-2" />
+                  營養計算
+                </Button>
+              </Link>
+              <Button variant="outline" onClick={handleLogout} className="text-xs px-3 py-1 glass border-primary/30 hover:bg-primary/10 transition-all duration-300 hover:scale-105">
+                登出
+              </Button>
+            </div>
           </div>
 
           {/* Cat Filter */}
-          <div className="mb-4">
+          <div className="mb-4 animate-slide-up" style={{animationDelay: '0.1s'}}>
             <Select value={selectedCatId} onValueChange={setSelectedCatId}>
-              <SelectTrigger className="w-full rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400">
+              <SelectTrigger className="w-full rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
                 <SelectValue placeholder="選擇貓咪篩選" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">🐾 所有貓咪</SelectItem>
+              <SelectContent className="glass backdrop-blur-lg border-primary/20">
+                <SelectItem value="all" className="hover:bg-primary/10 flex items-center gap-2">
+                  <PawPrint className="h-4 w-4" />
+                  所有貓咪
+                </SelectItem>
                 {cats.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    🐱 {cat.name} ({cat.age}歲, {cat.weight}kg)
+                  <SelectItem key={cat.id} value={cat.id} className="hover:bg-primary/10">
+                    <div className="flex items-center gap-2">
+                      <CatAvatar avatarId={cat.avatar_id} size="sm" />
+                      {cat.name} ({cat.age}歲, {cat.weight}kg)
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -220,72 +272,88 @@ function DashboardContent() {
       <div className="px-4 py-6">
         {/* Records List */}
         {records.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">📦</span>
+          <div className="text-center py-12 animate-scale-in">
+            <div className="relative mb-8">
+              <div className="w-20 h-20 glass rounded-3xl flex items-center justify-center mx-auto animate-float border-primary/30">
+                <span className="text-2xl">📦</span>
+              </div>
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-24 h-24 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-2xl"></div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-foreground mb-2">
               還沒有營養記錄
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               開始第一次營養計算，建立產品記錄
             </p>
             <Link href="/calculator">
-              <Button className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl">
+              <Button className="gradient-primary text-white px-6 py-3 rounded-xl hover:scale-105 transition-transform duration-300 animate-glow shadow-lg">
                 🧮 開始計算
               </Button>
             </Link>
           </div>
         ) : (
           <div className="space-y-4">
-            {records.map((record) => (
-              <div key={record.id} className="bg-white rounded-3xl p-4 shadow-sm border border-blue-100">
+            {records.map((record, index) => (
+              <div key={record.id} className="glass rounded-3xl p-4 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:scale-[1.02] animate-slide-up group" style={{animationDelay: `${index * 0.1}s`}}>
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 mb-1">
+                    <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors duration-300">
                       {record.brand_name} - {record.product_name}
                     </h3>
                     <div className="flex items-center gap-2 mb-2">
                       {record.cats && (
-                        <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">
-                          🐱 {record.cats.name}
+                        <span className="text-xs bg-gradient-to-r from-primary/20 to-accent/20 text-primary px-2 py-1 rounded-full border border-primary/30 flex items-center gap-1">
+                          <CatAvatar avatarId="cat-1" size="sm" />
+                          {record.cats.name}
                         </span>
                       )}
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         {new Date(record.created_at).toLocaleDateString('zh-TW')}
                       </span>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleFavorite(record.id, record.favorited)}
-                    className="p-2"
-                  >
-                    {record.favorited ? '⭐' : '☆'}
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleFavorite(record.id, record.favorited)}
+                      className="p-2 hover:scale-110 transition-transform duration-300"
+                      title="切換收藏"
+                    >
+                      {record.favorited ? '⭐' : '☆'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteRecord(record.id, `${record.brand_name} - ${record.product_name}`)}
+                      className="p-2 hover:scale-110 transition-transform duration-300 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                      title="刪除記錄"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="bg-blue-50 p-2 rounded-xl">
-                    <div className="text-xs text-blue-600 font-medium">乾物質</div>
-                    <div className="text-sm font-bold text-blue-900">{record.dry_matter_content}%</div>
+                  <div className="bg-gradient-to-br from-primary/10 to-primary/20 p-2 rounded-xl border border-primary/30 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300">
+                    <div className="text-xs text-primary font-medium">乾物質</div>
+                    <div className="text-sm font-bold text-primary">{record.dry_matter_content}%</div>
                   </div>
-                  <div className="bg-emerald-50 p-2 rounded-xl">
-                    <div className="text-xs text-emerald-600 font-medium">DM蛋白質</div>
-                    <div className="text-sm font-bold text-emerald-900">{record.dm_protein}%</div>
+                  <div className="bg-gradient-to-br from-success/10 to-success/20 p-2 rounded-xl border border-success/30 hover:shadow-lg hover:shadow-success/20 transition-all duration-300">
+                    <div className="text-xs text-success font-medium">DM蛋白質</div>
+                    <div className="text-sm font-bold text-success">{record.dm_protein}%</div>
                   </div>
-                  <div className="bg-amber-50 p-2 rounded-xl">
-                    <div className="text-xs text-amber-600 font-medium">DM脂肪</div>
-                    <div className="text-sm font-bold text-amber-900">{record.dm_fat}%</div>
+                  <div className="bg-gradient-to-br from-secondary/10 to-secondary/20 p-2 rounded-xl border border-secondary/30 hover:shadow-lg hover:shadow-secondary/20 transition-all duration-300">
+                    <div className="text-xs text-secondary font-medium">DM脂肪</div>
+                    <div className="text-sm font-bold text-secondary">{record.dm_fat}%</div>
                   </div>
-                  <div className="bg-violet-50 p-2 rounded-xl">
-                    <div className="text-xs text-violet-600 font-medium">DM纖維</div>
-                    <div className="text-sm font-bold text-violet-900">{record.dm_fiber}%</div>
+                  <div className="bg-gradient-to-br from-accent/10 to-accent/20 p-2 rounded-xl border border-accent/30 hover:shadow-lg hover:shadow-accent/20 transition-all duration-300">
+                    <div className="text-xs text-accent font-medium">DM纖維</div>
+                    <div className="text-sm font-bold text-accent">{record.dm_fiber}%</div>
                   </div>
                 </div>
 
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-muted-foreground">
                   原始：蛋白質{record.protein_percent}% • 脂肪{record.fat_percent}% • 水分{record.moisture_percent}%
                 </div>
               </div>
@@ -303,8 +371,13 @@ function DashboardContent() {
 export default function DashboardPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center relative overflow-hidden">
+        <div className="fixed top-20 left-1/4 h-96 w-96 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="fixed bottom-20 right-1/4 h-96 w-96 bg-gradient-to-r from-secondary/15 to-primary/15 rounded-full blur-3xl animate-pulse-slow" style={{animationDelay: '2s'}}></div>
+        <div className="glass rounded-3xl p-8 animate-scale-in">
+          <div className="animate-spin rounded-full h-20 w-20 border-4 border-primary/30 border-t-primary mx-auto mb-4"></div>
+          <p className="text-foreground font-medium">載入中...</p>
+        </div>
       </div>
     }>
       <DashboardContent />

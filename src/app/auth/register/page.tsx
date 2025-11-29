@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import { UserPlus, Mail, Lock, User, ArrowLeft } from 'lucide-react'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -21,7 +21,6 @@ export default function RegisterPage() {
     setLoading(true)
     setMessage('')
 
-    // 驗證密碼
     if (password !== confirmPassword) {
       setMessage('密碼與確認密碼不符')
       setLoading(false)
@@ -77,25 +76,26 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Logo/Title */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">貓咪乾物質計算器</h1>
-          <p className="text-gray-600 mt-2">建立您的免費帳號</p>
-        </div>
+    <div className="min-h-screen relative overflow-hidden">
+      <div className="fixed inset-0 -z-10 bg-grid opacity-20"></div>
+      <div className="fixed top-20 left-1/4 h-96 w-96 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-3xl animate-pulse-slow"></div>
+      <div className="fixed bottom-20 right-1/4 h-96 w-96 bg-gradient-to-r from-secondary/15 to-primary/15 rounded-full blur-3xl animate-pulse-slow" style={{animationDelay: '2s'}}></div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>註冊</CardTitle>
-            <CardDescription>
-              建立新帳號，開始管理您的貓咪營養資料
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={handleRegister} className="space-y-4">
+      <div className="relative min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md animate-slide-up">
+          
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">貓咪乾物質計算器</h1>
+            <p className="text-muted-foreground">建立您的免費帳號</p>
+          </div>
+
+          <div className="glass rounded-3xl p-8 shadow-2xl border-primary/30">
+            <form onSubmit={handleRegister} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="name">姓名</Label>
+                <Label htmlFor="name" className="text-foreground flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  姓名
+                </Label>
                 <Input
                   id="name"
                   type="text"
@@ -103,11 +103,15 @@ export default function RegisterPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  className="rounded-xl border-primary/30 bg-background/50 focus:border-primary focus:ring-primary h-12"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">電子郵件</Label>
+                <Label htmlFor="email" className="text-foreground flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  電子郵件
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -115,11 +119,15 @@ export default function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="rounded-xl border-primary/30 bg-background/50 focus:border-primary focus:ring-primary h-12"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password">密碼</Label>
+                <Label htmlFor="password" className="text-foreground flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  密碼
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -128,11 +136,15 @@ export default function RegisterPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
+                  className="rounded-xl border-primary/30 bg-background/50 focus:border-primary focus:ring-primary h-12"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">確認密碼</Label>
+                <Label htmlFor="confirmPassword" className="text-foreground flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  確認密碼
+                </Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -140,14 +152,15 @@ export default function RegisterPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  className="rounded-xl border-primary/30 bg-background/50 focus:border-primary focus:ring-primary h-12"
                 />
               </div>
 
               {message && (
-                <div className={`text-sm p-3 rounded ${
+                <div className={`text-sm p-4 rounded-xl backdrop-blur-sm ${
                   message.includes('成功') 
-                    ? 'bg-green-50 text-green-700 border border-green-200' 
-                    : 'bg-red-50 text-red-700 border border-red-200'
+                    ? 'bg-success/20 text-success border border-success/30' 
+                    : 'bg-destructive/20 text-destructive border border-destructive/30'
                 }`}>
                   {message}
                 </div>
@@ -155,19 +168,20 @@ export default function RegisterPage() {
 
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full gradient-primary text-white hover:scale-105 transition-all duration-300 h-12 rounded-xl font-semibold shadow-lg animate-glow" 
                 disabled={loading}
               >
+                <UserPlus className="mr-2 h-5 w-5" />
                 {loading ? '註冊中...' : '建立帳號'}
               </Button>
             </form>
 
-            <div className="relative">
+            <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
+                <span className="w-full border-t border-border" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-card px-3 text-muted-foreground">
                   或者
                 </span>
               </div>
@@ -175,10 +189,10 @@ export default function RegisterPage() {
 
             <Button 
               variant="outline" 
-              className="w-full" 
+              className="w-full glass hover:scale-105 transition-all duration-300 h-12 rounded-xl border-primary/30" 
               onClick={handleGoogleRegister}
             >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+              <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -199,30 +213,32 @@ export default function RegisterPage() {
               使用 Google 註冊
             </Button>
 
-            <div className="text-center text-sm">
-              <span className="text-gray-600">已經有帳號了？</span>
-              <Link 
-                href="/auth/login" 
-                className="text-blue-600 hover:underline ml-1"
-              >
-                立即登入
-              </Link>
-            </div>
+            <div className="text-center text-sm mt-6 space-y-3">
+              <p className="text-muted-foreground">
+                已經有帳號了？
+                <Link 
+                  href="/auth/login" 
+                  className="text-primary hover:text-primary/80 font-semibold ml-1 hover:underline"
+                >
+                  立即登入
+                </Link>
+              </p>
 
-            <div className="text-center">
               <Link 
                 href="/" 
-                className="text-sm text-gray-600 hover:underline"
+                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                ← 返回首頁
+                <ArrowLeft className="h-4 w-4" />
+                返回首頁
               </Link>
-            </div>
 
-            <div className="text-xs text-gray-500 text-center">
-              建立帳號即表示您同意我們的服務條款和隱私政策
+              <p className="text-xs text-muted-foreground/70 pt-4 border-t border-border">
+                建立帳號即表示您同意我們的服務條款和隱私政策
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+        </div>
       </div>
     </div>
   )
