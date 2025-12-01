@@ -26,8 +26,8 @@ export default function CalculatorPage() {
   const saveInProgressRef = useRef(false) // 額外的全局鎖
   const savePromiseRef = useRef<Promise<void> | null>(null) // 保存 Promise 引用
   
-  // Form data
-  const [selectedCatId, setSelectedCatId] = useState<string>('none')
+  // Form data - changed to support multiple cats
+  const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
   const [formData, setFormData] = useState<FoodCalculationInput>({
     brand_name: '',
     product_name: '',
@@ -138,7 +138,18 @@ export default function CalculatorPage() {
     }
   }
 
-  // Remove handleCatChange since we now use checkboxes
+  // Handle cat selection (multiple cats)
+  const handleCatSelection = (catId: string) => {
+    setSelectedCatIds(prev => {
+      if (prev.includes(catId)) {
+        // Remove cat if already selected
+        return prev.filter(id => id !== catId)
+      } else {
+        // Add cat if not selected
+        return [...prev, catId]
+      }
+    })
+  }
 
   const handleInputChange = (field: keyof FoodCalculationInput, value: string | number | undefined) => {
     setFormData(prev => ({
@@ -183,7 +194,7 @@ export default function CalculatorPage() {
 
     const now = Date.now()
 
-    if (!user || !result || saving || savingRef.current || saveInProgressRef.current || (now - lastSaveTime.current < 3000)) {
+    if (!user || !result || saving || savingRef.current || saveInProgressRef.current || (now - lastSaveTime.current < 5000)) {
       console.log('Duplicate save attempt prevented', {
         user: !!user,
         result: !!result,
@@ -195,25 +206,28 @@ export default function CalculatorPage() {
       return
     }
 
+    // Set locks IMMEDIATELY before creating the promise to prevent race conditions
+    setSaving(true)
+    savingRef.current = true
+    saveInProgressRef.current = true
+    lastSaveTime.current = now
+
     const savePromise = (async () => {
       try {
-        setSaving(true)
-        savingRef.current = true
-        saveInProgressRef.current = true
-        lastSaveTime.current = now
 
         console.log('Starting save process', { userId: user.id, timestamp: now })
 
         const saveId = `${user.id}-${now}-${Math.random().toString(36).substr(2, 9)}`
         console.log('Save ID:', saveId)
 
+        // Create a single food calculation record (not linked to any specific cat initially)
         console.log(`[${saveId}] Creating single food calculation record...`)
         
         const { data: foodCalculation, error: calculationError } = await supabase
           .from('food_calculations')
           .insert({
             user_id: user.id,
-            cat_id: (selectedCatId && selectedCatId !== 'none') ? selectedCatId : null,
+            cat_id: null, // Always null now, we use the association table for cat relationships
             brand_name: formData.brand_name,
             product_name: formData.product_name,
             food_weight: formData.food_weight,
@@ -252,6 +266,73 @@ export default function CalculatorPage() {
         }
 
         console.log(`[${saveId}] Food calculation created successfully:`, foodCalculation.id)
+
+        // If cats are selected, create associations in the junction table
+        if (selectedCatIds.length > 0) {
+          console.log(`[${saveId}] Creating ${selectedCatIds.length} cat associations...`)
+          console.log(`[${saveId}] Selected cat IDs:`, selectedCatIds)
+          console.log(`[${saveId}] Food calculation ID:`, foodCalculation.id)
+          
+          // Try to create associations directly - let the error handling determine if table exists
+          const associationPromises = selectedCatIds.map(async (catId) => {
+            console.log(`[${saveId}] Inserting association: food_calculation_id=${foodCalculation.id}, cat_id=${catId}`)
+            const result = await supabase
+              .from('food_calculation_cats')
+              .insert({
+                food_calculation_id: foodCalculation.id,
+                cat_id: catId
+              })
+            
+            if (result.error) {
+              console.error(`[${saveId}] Association insert failed for cat ${catId}:`, result.error)
+            } else {
+              console.log(`[${saveId}] Association insert successful for cat ${catId}:`, result.data)
+            }
+            
+            return result
+          })
+
+          const associationResults = await Promise.all(associationPromises)
+          
+          // Check for errors with detailed logging
+          const failedAssociations = associationResults.filter(result => result.error)
+          if (failedAssociations.length > 0) {
+            console.error(`[${saveId}] Some cat associations failed:`, failedAssociations)
+            
+            // Check if it's a table doesn't exist error
+            const tableNotExistErrors = failedAssociations.filter(failed => 
+              failed.error?.message?.includes('does not exist') ||
+              failed.error?.message?.includes('relation') && failed.error?.message?.includes('food_calculation_cats')
+            )
+            
+            if (tableNotExistErrors.length > 0) {
+              console.warn(`[${saveId}] Association table doesn't exist, updating food calculation with first cat`)
+              alert('警告：多貓關聯功能需要執行數據庫遷移。目前只保存第一隻選中的貓咪。\n請執行 migration/complete-migration-for-multiple-cats.sql')
+              
+              // Fallback: update the food calculation with the first selected cat
+              const { error: updateError } = await supabase
+                .from('food_calculations')
+                .update({ cat_id: selectedCatIds[0] })
+                .eq('id', foodCalculation.id)
+                
+              if (updateError) {
+                console.error(`[${saveId}] Fallback cat_id update failed:`, updateError)
+              } else {
+                console.log(`[${saveId}] Fallback: Updated cat_id to ${selectedCatIds[0]}`)
+              }
+            } else {
+              // Other types of errors
+              failedAssociations.forEach(failed => {
+                console.error(`[${saveId}] Failed association error:`, failed.error)
+              })
+              alert(`部分貓咪關聯保存失敗：${failedAssociations.length} 個關聯保存失敗。請檢查控制台日誌。`)
+            }
+          } else {
+            console.log(`[${saveId}] All ${selectedCatIds.length} cat associations created successfully`)
+          }
+        } else {
+          console.log(`[${saveId}] No cats selected, skipping association creation`)
+        }
         
         console.log(`[${saveId}] Save process completed successfully`)
         alert('計算記錄已保存！')
@@ -325,29 +406,36 @@ export default function CalculatorPage() {
           </div>
                 <form onSubmit={handleCalculate} className="space-y-6">
                   
-                  {/* Cat Selection */}
+                  {/* Cat Selection - Multiple cats */}
                   <div className="space-y-3">
-                    <Label>選擇貓咪（可選）</Label>
+                    <Label>選擇貓咪（可多選，可選）</Label>
                     <div className="glass p-4 rounded-xl border border-primary/30">
-                      <Select value={selectedCatId} onValueChange={setSelectedCatId}>
-                        <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
-                          <SelectValue placeholder="選擇一隻貓咪" />
-                        </SelectTrigger>
-                        <SelectContent className="glass backdrop-blur-lg border-primary/20">
-                          <SelectItem value="none" className="hover:bg-primary/10">不指定貓咪</SelectItem>
+                      {cats.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">暫無貓咪資料，請先到貓咪頁面新增</p>
+                      ) : (
+                        <div className="space-y-3">
                           {cats.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id} className="hover:bg-primary/10">
-                              <div className="flex items-center gap-2">
+                            <div key={cat.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-primary/5 transition-colors">
+                              <input
+                                type="checkbox"
+                                id={`cat-${cat.id}`}
+                                checked={selectedCatIds.includes(cat.id)}
+                                onChange={() => handleCatSelection(cat.id)}
+                                className="h-4 w-4 text-primary focus:ring-primary border-primary/30 rounded"
+                              />
+                              <label htmlFor={`cat-${cat.id}`} className="flex items-center gap-2 flex-1 cursor-pointer">
                                 <CatAvatar avatarId={cat.avatar_id} size="sm" />
-                                <span>{cat.name} ({cat.age}歲, {cat.weight}kg)</span>
-                              </div>
-                            </SelectItem>
+                                <span className="text-sm font-medium">{cat.name} ({cat.age}歲, {cat.weight}kg)</span>
+                              </label>
+                            </div>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </div>
+                      )}
                     </div>
-                    {selectedCatId && selectedCatId !== 'none' && (
-                      <p className="text-sm text-primary">已選擇: {cats.find(c => c.id === selectedCatId)?.name}</p>
+                    {selectedCatIds.length > 0 && (
+                      <p className="text-sm text-primary">
+                        已選擇 {selectedCatIds.length} 隻貓咪: {selectedCatIds.map(id => cats.find(c => c.id === id)?.name).join(', ')}
+                      </p>
                     )}
                   </div>
 

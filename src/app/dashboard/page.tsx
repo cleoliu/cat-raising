@@ -48,16 +48,24 @@ interface FoodRecord {
   dm_ash: number
   protein_calorie_ratio: number | null
   fat_calorie_ratio: number | null
+  cat_id?: string | null
   carbohydrate_calorie_ratio: number | null
   calcium_phosphorus_ratio: number | null
   favorited: boolean
   created_at: string
-  cat_id: string | null
   cats?: {
     id: string
     name: string
     avatar_id?: string
-  } | null
+  }
+  food_calculation_cats?: Array<{
+    cat_id: string
+    cats: {
+      id: string
+      name: string
+      avatar_id?: string
+    }
+  }>
 }
 
 function DashboardContent() {
@@ -86,8 +94,21 @@ function DashboardContent() {
     target_age: '',
     food_type: ''
   })
-  const [editSelectedCatId, setEditSelectedCatId] = useState<string>('none')
+  const [editSelectedCatIds, setEditSelectedCatIds] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
+
+  // Handle cat selection for editing (multiple cats)
+  const handleEditCatSelection = (catId: string) => {
+    setEditSelectedCatIds(prev => {
+      if (prev.includes(catId)) {
+        // Remove cat if already selected
+        return prev.filter(id => id !== catId)
+      } else {
+        // Add cat if not selected
+        return [...prev, catId]
+      }
+    })
+  }
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -120,13 +141,23 @@ function DashboardContent() {
             id,
             name,
             avatar_id
+          ),
+          food_calculation_cats (
+            cat_id,
+            cats (
+              id,
+              name,
+              avatar_id
+            )
           )
         `)
         .eq('user_id', userId)
 
-      // Filter by cat if specified - now using direct cat_id relationship
+      // Filter by cat if specified - need to handle both old cat_id and new association table
       if (catId && catId !== 'all') {
-        query = query.eq('cat_id', catId)
+        // For now, we'll filter in JavaScript after fetching, since SQL filtering 
+        // on association tables is more complex. This can be optimized later.
+        // query = query.eq('cat_id', catId)
       }
 
       const { data: allRecords, error } = await query.order('created_at', { ascending: false })
@@ -136,7 +167,26 @@ function DashboardContent() {
         return
       }
 
-      setRecords(allRecords || [])
+      let filteredRecords = allRecords || []
+
+      // Filter by cat if specified (supporting both old cat_id and new association table)
+      if (catId && catId !== 'all') {
+        filteredRecords = filteredRecords.filter(record => {
+          // Check old cat_id relationship
+          if (record.cat_id === catId) {
+            return true
+          }
+          
+          // Check new association table
+          if (record.food_calculation_cats && record.food_calculation_cats.length > 0) {
+            return record.food_calculation_cats.some((association: { cat_id: string }) => association.cat_id === catId)
+          }
+          
+          return false
+        })
+      }
+
+      setRecords(filteredRecords)
     } catch (error) {
       console.error('Error loading records:', error)
     }
@@ -210,8 +260,19 @@ function DashboardContent() {
       target_age: record.target_age || '',
       food_type: record.food_type || ''
     })
-    // Set currently associated cat
-    setEditSelectedCatId(record.cat_id || 'none')
+    
+    // Load existing cat associations
+    const existingCatIds: string[] = []
+    
+    // Check new association table first
+    if (record.food_calculation_cats && record.food_calculation_cats.length > 0) {
+      existingCatIds.push(...record.food_calculation_cats.map(association => association.cat_id))
+    } else if (record.cat_id) {
+      // Fallback to legacy single cat relationship
+      existingCatIds.push(record.cat_id)
+    }
+    
+    setEditSelectedCatIds(existingCatIds)
     setShowEditForm(true)
   }
 
@@ -288,7 +349,7 @@ function DashboardContent() {
         calcium_phosphorus_ratio: (formData.calcium_percent && formData.phosphorus_percent && parseFloat(formData.phosphorus_percent) > 0) 
           ? parseFloat((parseFloat(formData.calcium_percent) / parseFloat(formData.phosphorus_percent)).toFixed(2))
           : null,
-        cat_id: (editSelectedCatId && editSelectedCatId !== 'none') ? editSelectedCatId : null
+        cat_id: null // Always null now, we use the association table
       }
 
       const { error } = await supabase
@@ -302,7 +363,36 @@ function DashboardContent() {
         return
       }
 
-      // Cat association is now handled directly via cat_id field
+      // Handle cat associations via junction table
+      // First, delete all existing associations for this record
+      const { error: deleteError } = await supabase
+        .from('food_calculation_cats')
+        .delete()
+        .eq('food_calculation_id', editingRecord.id)
+
+      if (deleteError) {
+        console.error('Error deleting old associations:', deleteError)
+        alert('更新關聯失敗：' + deleteError.message)
+        return
+      }
+
+      // Then, create new associations if cats are selected
+      if (editSelectedCatIds.length > 0) {
+        const associations = editSelectedCatIds.map(catId => ({
+          food_calculation_id: editingRecord.id,
+          cat_id: catId
+        }))
+
+        const { error: insertError } = await supabase
+          .from('food_calculation_cats')
+          .insert(associations)
+
+        if (insertError) {
+          console.error('Error creating new associations:', insertError)
+          alert('更新關聯失敗：' + insertError.message)
+          return
+        }
+      }
 
       // Reload records to get updated associations
       if (user) {
@@ -311,7 +401,7 @@ function DashboardContent() {
       
       setShowEditForm(false)
       setEditingRecord(null)
-      setEditSelectedCatId('none')
+      setEditSelectedCatIds([])
       setFormData({
         brand_name: '',
         product_name: '',
@@ -341,7 +431,7 @@ function DashboardContent() {
   const handleCancelEdit = () => {
     setEditingRecord(null)
     setShowEditForm(false)
-    setEditSelectedCatId('none')
+    setEditSelectedCatIds([])
     setFormData({
       brand_name: '',
       product_name: '',
@@ -737,29 +827,36 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                {/* 貓咪選擇 */}
+                {/* 貓咪選擇 - 多選複選框 */}
                 <div className="space-y-3">
-                  <h3 className="text-lg font-medium">關聯貓咪 - 可選</h3>
+                  <h3 className="text-lg font-medium">關聯貓咪 - 可多選</h3>
                   <div className="glass p-4 rounded-xl border border-primary/30">
-                    <Select value={editSelectedCatId} onValueChange={setEditSelectedCatId}>
-                      <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
-                        <SelectValue placeholder="選擇一隻貓咪" />
-                      </SelectTrigger>
-                      <SelectContent className="glass backdrop-blur-lg border-primary/20">
-                        <SelectItem value="none" className="hover:bg-primary/10">不指定貓咪</SelectItem>
+                    {cats.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">暫無貓咪資料，請先到貓咪頁面新增</p>
+                    ) : (
+                      <div className="space-y-3">
                         {cats.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id} className="hover:bg-primary/10">
-                            <div className="flex items-center gap-2">
+                          <div key={cat.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-primary/5 transition-colors">
+                            <input
+                              type="checkbox"
+                              id={`edit-cat-${cat.id}`}
+                              checked={editSelectedCatIds.includes(cat.id)}
+                              onChange={() => handleEditCatSelection(cat.id)}
+                              className="h-4 w-4 text-primary focus:ring-primary border-primary/30 rounded"
+                            />
+                            <label htmlFor={`edit-cat-${cat.id}`} className="flex items-center gap-2 flex-1 cursor-pointer">
                               <CatAvatar avatarId={cat.avatar_id} size="sm" />
-                              <span>{cat.name} ({cat.age}歲, {cat.weight}kg)</span>
-                            </div>
-                          </SelectItem>
+                              <span className="text-sm font-medium">{cat.name} ({cat.age}歲, {cat.weight}kg)</span>
+                            </label>
+                          </div>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    )}
                   </div>
-                  {editSelectedCatId && editSelectedCatId !== 'none' && (
-                    <p className="text-sm text-primary">已選擇: {cats.find(c => c.id === editSelectedCatId)?.name}</p>
+                  {editSelectedCatIds.length > 0 && (
+                    <p className="text-sm text-primary">
+                      已選擇 {editSelectedCatIds.length} 隻貓咪: {editSelectedCatIds.map(id => cats.find(c => c.id === id)?.name).join(', ')}
+                    </p>
                   )}
                 </div>
 
@@ -894,14 +991,24 @@ function DashboardContent() {
                       )}
                     </div>
                     
-                    {/* 貓咪標籤 */}
+                    {/* 貓咪標籤 - 支持多貓顯示 */}
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      {record.cats ? (
+                      {record.food_calculation_cats && record.food_calculation_cats.length > 0 ? (
+                        // 顯示關聯表中的多隻貓咪
+                        record.food_calculation_cats.map((association) => (
+                          <span key={association.cat_id} className="text-xs bg-gradient-to-r from-primary/20 to-accent/20 text-primary px-2 py-1 rounded-full border border-primary/30 flex items-center gap-1">
+                            <CatAvatar avatarId={association.cats.avatar_id} size="sm" />
+                            {association.cats.name}
+                          </span>
+                        ))
+                      ) : record.cats ? (
+                        // 後備：顯示舊的單貓關聯
                         <span className="text-xs bg-gradient-to-r from-primary/20 to-accent/20 text-primary px-2 py-1 rounded-full border border-primary/30 flex items-center gap-1">
                           <CatAvatar avatarId={record.cats.avatar_id} size="sm" />
                           {record.cats.name}
                         </span>
                       ) : (
+                        // 沒有任何貓咪關聯
                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full border border-gray-300">
                           未指定貓咪
                         </span>

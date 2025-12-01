@@ -25,9 +25,20 @@ interface FoodRecord {
   dm_ash: number
   favorited: boolean
   created_at: string
+  cat_id?: string | null
   cats?: {
+    id: string
     name: string
+    avatar_id?: string
   }
+  food_calculation_cats?: Array<{
+    cat_id: string
+    cats: {
+      id: string
+      name: string
+      avatar_id?: string
+    }
+  }>
 }
 
 export default function RecordsPage() {
@@ -42,7 +53,19 @@ export default function RecordsPage() {
         .from('food_calculations')
         .select(`
           *,
-          cats (name)
+          cats (
+            id,
+            name,
+            avatar_id
+          ),
+          food_calculation_cats (
+            cat_id,
+            cats (
+              id,
+              name,
+              avatar_id
+            )
+          )
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
@@ -186,13 +209,27 @@ export default function RecordsPage() {
                       <div className="flex-1">
                         <CardTitle className="flex items-center gap-2 text-foreground group-hover:text-primary transition-colors duration-300">
                           {record.brand_name} - {record.product_name}
-                          {record.cats && (
-                            <span className="text-sm text-primary bg-gradient-to-r from-primary/20 to-accent/20 px-2 py-1 rounded border border-primary/30 flex items-center gap-1">
-                              <CatAvatar avatarId="cat-1" size="sm" />
+                        </CardTitle>
+                        
+                        {/* Show cats - priority: association table first, then fallback to legacy cat_id */}
+                        {record.food_calculation_cats && record.food_calculation_cats.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {record.food_calculation_cats.map((association) => (
+                              <span key={association.cat_id} className="text-xs text-primary bg-gradient-to-r from-primary/20 to-accent/20 px-2 py-1 rounded border border-primary/30 flex items-center gap-1">
+                                <CatAvatar avatarId={association.cats.avatar_id || "cat-1"} size="sm" />
+                                {association.cats.name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : record.cats ? (
+                          // Fallback to legacy single cat relationship
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            <span className="text-xs text-primary bg-gradient-to-r from-primary/20 to-accent/20 px-2 py-1 rounded border border-primary/30 flex items-center gap-1">
+                              <CatAvatar avatarId={record.cats.avatar_id || "cat-1"} size="sm" />
                               {record.cats.name}
                             </span>
-                          )}
-                        </CardTitle>
+                          </div>
+                        ) : null}
                         <CardDescription className="text-muted-foreground">
                           {new Date(record.created_at).toLocaleString('zh-TW')}
                         </CardDescription>
