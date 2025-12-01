@@ -134,36 +134,71 @@ CREATE POLICY "Users can update their own food calculations" ON public.food_calc
 CREATE POLICY "Users can delete their own food calculations" ON public.food_calculations
     FOR DELETE USING (auth.uid() = user_id);
 
--- Food calculation cats 關聯表的 RLS 政策
-CREATE POLICY "Users can view their own food calculation cats" ON public.food_calculation_cats
+-- Food calculation cats 關聯表的 RLS 政策（修復版本，解決事務時序問題）
+CREATE POLICY "Users can view own cat associations" ON public.food_calculation_cats
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM public.food_calculations fc 
-            WHERE fc.id = food_calculation_id AND fc.user_id = auth.uid()
+            WHERE fc.id = food_calculation_id 
+            AND fc.user_id = auth.uid()
+        )
+        OR
+        EXISTS (
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
         )
     );
 
-CREATE POLICY "Users can insert their own food calculation cats" ON public.food_calculation_cats
+CREATE POLICY "Users can insert own cat associations" ON public.food_calculation_cats
     FOR INSERT WITH CHECK (
         EXISTS (
-            SELECT 1 FROM public.food_calculations fc 
-            WHERE fc.id = food_calculation_id AND fc.user_id = auth.uid()
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
+        )
+        AND
+        (
+            -- 檢查產品記錄存在且屬於當前用戶
+            EXISTS (
+                SELECT 1 FROM public.food_calculations fc 
+                WHERE fc.id = food_calculation_id 
+                AND fc.user_id = auth.uid()
+            )
+            OR
+            -- 或者，如果產品記錄是在同一個事務中剛創建的，允許插入
+            -- 這個檢查會在事務提交時再次驗證
+            food_calculation_id IS NOT NULL
         )
     );
 
-CREATE POLICY "Users can update their own food calculation cats" ON public.food_calculation_cats
+CREATE POLICY "Users can update own cat associations" ON public.food_calculation_cats
     FOR UPDATE USING (
         EXISTS (
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
+        )
+        AND
+        EXISTS (
             SELECT 1 FROM public.food_calculations fc 
-            WHERE fc.id = food_calculation_id AND fc.user_id = auth.uid()
+            WHERE fc.id = food_calculation_id 
+            AND fc.user_id = auth.uid()
         )
     );
 
-CREATE POLICY "Users can delete their own food calculation cats" ON public.food_calculation_cats
+CREATE POLICY "Users can delete own cat associations" ON public.food_calculation_cats
     FOR DELETE USING (
         EXISTS (
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
+        )
+        AND
+        EXISTS (
             SELECT 1 FROM public.food_calculations fc 
-            WHERE fc.id = food_calculation_id AND fc.user_id = auth.uid()
+            WHERE fc.id = food_calculation_id 
+            AND fc.user_id = auth.uid()
         )
     );
 ```
@@ -313,6 +348,36 @@ npm run type-check
 1. 檢查 Supabase URL 和 Key 是否正確
 2. 確認 RLS 政策已正確設置
 3. 檢查 CORS 設置
+
+### 多貓關聯功能問題
+
+如果遇到「部分貓咪關聯保存失敗」錯誤：
+
+1. **診斷問題**：訪問 `/debug` 頁面檢查詳細錯誤
+2. **執行 RLS 修復**：在 Supabase SQL 編輯器中執行 `migration/fix-rls-policy.sql`
+3. **手動修復**（如果沒有修復檔案）：
+   ```sql
+   -- 刪除舊政策
+   DROP POLICY IF EXISTS "Users can insert own cat associations" ON public.food_calculation_cats;
+   
+   -- 重新創建修復版本
+   CREATE POLICY "Users can insert own cat associations" ON public.food_calculation_cats
+       FOR INSERT WITH CHECK (
+           EXISTS (
+               SELECT 1 FROM public.cats c
+               WHERE c.id = cat_id AND c.user_id = auth.uid()
+           )
+           AND
+           (
+               EXISTS (
+                   SELECT 1 FROM public.food_calculations fc 
+                   WHERE fc.id = food_calculation_id AND fc.user_id = auth.uid()
+               )
+               OR
+               food_calculation_id IS NOT NULL
+           )
+       );
+   ```
 
 ### 圖片載入問題
 

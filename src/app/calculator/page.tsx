@@ -285,9 +285,11 @@ export default function CalculatorPage() {
             
             const result = await supabase
               .from('food_calculation_cats')
-              .insert({
+              .upsert({
                 food_calculation_id: foodCalculation.id,
                 cat_id: catId
+              }, {
+                onConflict: 'food_calculation_id,cat_id'
               })
             
             if (result.error) {

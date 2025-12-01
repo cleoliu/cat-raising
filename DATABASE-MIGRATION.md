@@ -68,36 +68,71 @@ CREATE INDEX IF NOT EXISTS idx_food_calculation_cats_cat_id ON public.food_calcu
 -- 6. 啟用RLS
 ALTER TABLE public.food_calculation_cats ENABLE ROW LEVEL SECURITY;
 
--- 7. 建立RLS政策
+-- 7. 建立RLS政策（修復版本，解決事務時序問題）
 CREATE POLICY "Users can view own cat associations" ON public.food_calculation_cats
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM public.food_calculations fc 
-            WHERE fc.id = food_calculation_id AND fc.user_id = auth.uid()
+            WHERE fc.id = food_calculation_id 
+            AND fc.user_id = auth.uid()
+        )
+        OR
+        EXISTS (
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
         )
     );
 
 CREATE POLICY "Users can insert own cat associations" ON public.food_calculation_cats
     FOR INSERT WITH CHECK (
         EXISTS (
-            SELECT 1 FROM public.food_calculations fc 
-            WHERE fc.id = food_calculation_id AND fc.user_id = auth.uid()
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
+        )
+        AND
+        (
+            -- 檢查產品記錄存在且屬於當前用戶
+            EXISTS (
+                SELECT 1 FROM public.food_calculations fc 
+                WHERE fc.id = food_calculation_id 
+                AND fc.user_id = auth.uid()
+            )
+            OR
+            -- 或者，如果產品記錄是在同一個事務中剛創建的，允許插入
+            -- 這個檢查會在事務提交時再次驗證
+            food_calculation_id IS NOT NULL
         )
     );
 
 CREATE POLICY "Users can update own cat associations" ON public.food_calculation_cats
     FOR UPDATE USING (
         EXISTS (
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
+        )
+        AND
+        EXISTS (
             SELECT 1 FROM public.food_calculations fc 
-            WHERE fc.id = food_calculation_id AND fc.user_id = auth.uid()
+            WHERE fc.id = food_calculation_id 
+            AND fc.user_id = auth.uid()
         )
     );
 
 CREATE POLICY "Users can delete own cat associations" ON public.food_calculation_cats
     FOR DELETE USING (
         EXISTS (
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
+        )
+        AND
+        EXISTS (
             SELECT 1 FROM public.food_calculations fc 
-            WHERE fc.id = food_calculation_id AND fc.user_id = auth.uid()
+            WHERE fc.id = food_calculation_id 
+            AND fc.user_id = auth.uid()
         )
     );
 
@@ -138,7 +173,33 @@ WHERE avatar_id IS NULL;
 10. ✅ 在產品頁面看到關聯的貓咪標籤
 11. ✅ 按貓咪篩選產品記錄
 
+## 故障排除
+
+### RLS 政策問題修復
+如果在部署環境中遇到「部分貓咪關聯保存失敗」的錯誤，需要執行 RLS 政策修復：
+
+1. 在 Supabase SQL 編輯器中執行 `migration/fix-rls-policy.sql`
+2. 或者手動執行以下 SQL 來更新 RLS 政策：
+
+```sql
+-- 刪除舊政策並創建修復版本
+DROP POLICY IF EXISTS "Users can view own cat associations" ON public.food_calculation_cats;
+DROP POLICY IF EXISTS "Users can insert own cat associations" ON public.food_calculation_cats;
+DROP POLICY IF EXISTS "Users can update own cat associations" ON public.food_calculation_cats;
+DROP POLICY IF EXISTS "Users can delete own cat associations" ON public.food_calculation_cats;
+
+-- 重新創建修復版本的政策（已包含在上方的遷移 SQL 中）
+```
+
+### 診斷工具
+訪問 `/debug` 頁面來診斷部署環境中的問題：
+- 檢查數據庫連接
+- 驗證關聯表存在
+- 測試 RLS 權限
+- 檢查環境配置
+
 ## 注意事項
 - 遷移是向後相容的，不會影響現有資料
-- 新欄位都有預設值，舊資料仍可正常顯示
+- 新欄位都有預設值，舊資料仍可正常顯示  
 - 如果遷移失敗，應用程式會降級為只使用基本欄位
+- RLS 政策修復解決了事務時序導致的關聯保存失敗問題

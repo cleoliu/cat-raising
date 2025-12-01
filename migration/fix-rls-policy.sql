@@ -24,26 +24,13 @@ CREATE POLICY "Users can view own cat associations" ON public.food_calculation_c
         )
     );
 
--- INSERT 政策：可以為自己的貓咪和產品創建關聯
+-- INSERT 政策：可以為自己的貓咪創建關聯
 CREATE POLICY "Users can insert own cat associations" ON public.food_calculation_cats
     FOR INSERT WITH CHECK (
         EXISTS (
             SELECT 1 FROM public.cats c
             WHERE c.id = cat_id
             AND c.user_id = auth.uid()
-        )
-        AND
-        (
-            -- 檢查產品記錄存在且屬於當前用戶
-            EXISTS (
-                SELECT 1 FROM public.food_calculations fc 
-                WHERE fc.id = food_calculation_id 
-                AND fc.user_id = auth.uid()
-            )
-            OR
-            -- 或者，如果產品記錄是在同一個事務中剛創建的，允許插入
-            -- 這個檢查會在事務提交時再次驗證
-            food_calculation_id IS NOT NULL
         )
     );
 
