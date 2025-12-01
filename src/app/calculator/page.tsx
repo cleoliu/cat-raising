@@ -221,7 +221,7 @@ export default function CalculatorPage() {
     saveInProgressRef.current = true
     lastSaveTime.current = now
 
-    const savePromise = (async () => {
+    const savePromise: Promise<void> = (async () => {
       try {
 
         console.log('Starting save process', { userId: user.id, timestamp: now })
