@@ -27,7 +27,7 @@ export default function CalculatorPage() {
   const savePromiseRef = useRef<Promise<void> | null>(null) // 保存 Promise 引用
   
   // Form data
-  const [selectedCatId, setSelectedCatId] = useState<string>('')
+  const [selectedCatId, setSelectedCatId] = useState<string>('none')
   const [formData, setFormData] = useState<FoodCalculationInput>({
     brand_name: '',
     product_name: '',
@@ -213,7 +213,7 @@ export default function CalculatorPage() {
           .from('food_calculations')
           .insert({
             user_id: user.id,
-            cat_id: selectedCatId || null,
+            cat_id: (selectedCatId && selectedCatId !== 'none') ? selectedCatId : null,
             brand_name: formData.brand_name,
             product_name: formData.product_name,
             food_weight: formData.food_weight,
@@ -334,7 +334,7 @@ export default function CalculatorPage() {
                           <SelectValue placeholder="選擇一隻貓咪" />
                         </SelectTrigger>
                         <SelectContent className="glass backdrop-blur-lg border-primary/20">
-                          <SelectItem value="" className="hover:bg-primary/10">不指定貓咪</SelectItem>
+                          <SelectItem value="none" className="hover:bg-primary/10">不指定貓咪</SelectItem>
                           {cats.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id} className="hover:bg-primary/10">
                               <div className="flex items-center gap-2">
@@ -346,7 +346,7 @@ export default function CalculatorPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    {selectedCatId && (
+                    {selectedCatId && selectedCatId !== 'none' && (
                       <p className="text-sm text-primary">已選擇: {cats.find(c => c.id === selectedCatId)?.name}</p>
                     )}
                   </div>

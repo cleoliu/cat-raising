@@ -11,7 +11,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
 import CatAvatar from '@/components/CatAvatar'
-import { Trash2, PawPrint, Calculator, Edit2 } from 'lucide-react'
+import { Trash2, Calculator, Edit2 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
 interface Cat {
@@ -86,7 +86,7 @@ function DashboardContent() {
     target_age: '',
     food_type: ''
   })
-  const [editSelectedCatId, setEditSelectedCatId] = useState<string>('')
+  const [editSelectedCatId, setEditSelectedCatId] = useState<string>('none')
   const [submitting, setSubmitting] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -112,69 +112,31 @@ function DashboardContent() {
 
   const loadRecords = async (userId: string, catId?: string) => {
     try {
-      // Filter by cat if specified - need to join through the association table
+      let query = supabase
+        .from('food_calculations')
+        .select(`
+          *,
+          cats (
+            id,
+            name,
+            avatar_id
+          )
+        `)
+        .eq('user_id', userId)
+
+      // Filter by cat if specified - now using direct cat_id relationship
       if (catId && catId !== 'all') {
-        // 只獲取有特定貓咪關聯的記錄
-        const { data: calculationIds, error: filterError } = await supabase
-          .from('food_calculation_cats')
-          .select('food_calculation_id')
-          .eq('cat_id', catId)
-
-        if (filterError) {
-          console.error('Error filtering by cat:', filterError)
-          return
-        }
-
-        const ids = calculationIds.map(item => item.food_calculation_id)
-        if (ids.length === 0) {
-          setRecords([])
-          return
-        }
-
-        const { data, error } = await supabase
-          .from('food_calculations')
-          .select(`
-            *,
-            food_calculation_cats (
-              cats (
-                id,
-                name,
-                avatar_id
-              )
-            )
-          `)
-          .eq('user_id', userId)
-          .in('id', ids)
-          .order('created_at', { ascending: false })
-
-        if (error) {
-          console.error('Error loading filtered records:', error)
-          return
-        }
-
-        setRecords(data || [])
-      } else {
-        // 獲取所有記錄，包含貓咪資訊
-        const { data: allRecords, error } = await supabase
-          .from('food_calculations')
-          .select(`
-            *,
-            cats (
-              id,
-              name,
-              avatar_id
-            )
-          `)
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-
-        if (error) {
-          console.error('Error loading records:', error)
-          return
-        }
-
-        setRecords(allRecords || [])
+        query = query.eq('cat_id', catId)
       }
+
+      const { data: allRecords, error } = await query.order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error loading records:', error)
+        return
+      }
+
+      setRecords(allRecords || [])
     } catch (error) {
       console.error('Error loading records:', error)
     }
@@ -249,7 +211,7 @@ function DashboardContent() {
       food_type: record.food_type || ''
     })
     // Set currently associated cat
-    setEditSelectedCatId(record.cat_id || '')
+    setEditSelectedCatId(record.cat_id || 'none')
     setShowEditForm(true)
   }
 
@@ -326,7 +288,7 @@ function DashboardContent() {
         calcium_phosphorus_ratio: (formData.calcium_percent && formData.phosphorus_percent && parseFloat(formData.phosphorus_percent) > 0) 
           ? parseFloat((parseFloat(formData.calcium_percent) / parseFloat(formData.phosphorus_percent)).toFixed(2))
           : null,
-        cat_id: editSelectedCatId || null
+        cat_id: (editSelectedCatId && editSelectedCatId !== 'none') ? editSelectedCatId : null
       }
 
       const { error } = await supabase
@@ -344,12 +306,12 @@ function DashboardContent() {
 
       // Reload records to get updated associations
       if (user) {
-        await loadRecords(user.id)
+        await loadRecords(user.id, selectedCatId)
       }
       
       setShowEditForm(false)
       setEditingRecord(null)
-      setEditSelectedCatId('')
+      setEditSelectedCatId('none')
       setFormData({
         brand_name: '',
         product_name: '',
@@ -379,7 +341,7 @@ function DashboardContent() {
   const handleCancelEdit = () => {
     setEditingRecord(null)
     setShowEditForm(false)
-    setEditSelectedCatId('')
+    setEditSelectedCatId('none')
     setFormData({
       brand_name: '',
       product_name: '',
@@ -420,7 +382,7 @@ function DashboardContent() {
         setSelectedCatId(catParam)
         await loadRecords(user.id, catParam)
       } else {
-        await loadRecords(user.id)
+        await loadRecords(user.id, selectedCatId)
       }
       
       // 如果有 refresh 參數，清除 URL 中的參數
@@ -448,7 +410,7 @@ function DashboardContent() {
   // 當選擇貓咪改變時重新載入記錄
   useEffect(() => {
     if (user) {
-      loadRecords(user.id)
+      loadRecords(user.id, selectedCatId)
     }
   }, [selectedCatId, user])
 
@@ -784,7 +746,7 @@ function DashboardContent() {
                         <SelectValue placeholder="選擇一隻貓咪" />
                       </SelectTrigger>
                       <SelectContent className="glass backdrop-blur-lg border-primary/20">
-                        <SelectItem value="" className="hover:bg-primary/10">不指定貓咪</SelectItem>
+                        <SelectItem value="none" className="hover:bg-primary/10">不指定貓咪</SelectItem>
                         {cats.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id} className="hover:bg-primary/10">
                             <div className="flex items-center gap-2">
@@ -796,7 +758,7 @@ function DashboardContent() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {editSelectedCatId && (
+                  {editSelectedCatId && editSelectedCatId !== 'none' && (
                     <p className="text-sm text-primary">已選擇: {cats.find(c => c.id === editSelectedCatId)?.name}</p>
                   )}
                 </div>
