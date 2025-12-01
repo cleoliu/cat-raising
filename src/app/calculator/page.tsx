@@ -187,12 +187,6 @@ export default function CalculatorPage() {
   }
 
   const handleSave = async () => {
-    // Global save lock - prevent any concurrent saves
-    if ((window as any).__SAVE_IN_PROGRESS__) {
-      console.log('Global save lock active, rejecting save attempt')
-      return
-    }
-
     if (savePromiseRef.current) {
       console.log('Save already in progress, waiting for existing save...')
       return savePromiseRef.current
@@ -211,9 +205,6 @@ export default function CalculatorPage() {
       })
       return
     }
-
-    // Set global save lock
-    (window as any).__SAVE_IN_PROGRESS__ = true
 
     // Set locks IMMEDIATELY before creating the promise to prevent race conditions
     setSaving(true)
@@ -360,7 +351,6 @@ export default function CalculatorPage() {
         savingRef.current = false
         saveInProgressRef.current = false
         savePromiseRef.current = null
-        (window as any).__SAVE_IN_PROGRESS__ = false
       }
     })()
 
