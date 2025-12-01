@@ -359,9 +359,8 @@ export default function CalculatorPage() {
         setSaving(false)
         savingRef.current = false
         saveInProgressRef.current = false
-        // Release global save lock
-        (window as any).__SAVE_IN_PROGRESS__ = false
         savePromiseRef.current = null
+        (window as any).__SAVE_IN_PROGRESS__ = false
       }
     })()
 
