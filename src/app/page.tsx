@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Rocket, Calculator, Cat, CheckCircle } from 'lucide-react'
@@ -6,33 +7,55 @@ import { Rocket, Calculator, Cat, CheckCircle } from 'lucide-react'
 export default function Home() {
   return (
     <div className="min-h-screen w-full overflow-x-hidden">
-      {/* Hero Section */}
-      <section className="relative flex min-h-[60vh] flex-col items-center justify-center px-4 py-20 text-center">
-        <div className="absolute inset-0 -z-20 bg-grid-white/[0.05]"></div>
-        
-        <div className="mb-8 inline-flex h-24 w-24 items-center justify-center rounded-3xl bg-primary/10 ring-2 ring-primary/20">
-          <Rocket className="h-12 w-12 animate-glow text-primary" />
+      {/* Hero Section - 全屏背景圖片 */}
+      <section className="relative min-h-screen flex flex-col">
+        {/* 背景圖片 */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/hero-cover.png"
+            alt="溫馨的貓咪居家場景"
+            fill
+            className="object-cover object-center"
+            priority={true}
+            unoptimized={true}
+          />
+          {/* 輕微淡化效果 - 保持圖片亮度 */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60"></div>
         </div>
-        
-        <h1 className="mb-4 bg-gradient-to-br from-primary via-accent to-secondary bg-clip-text text-4xl font-extrabold tracking-tight text-transparent md:text-6xl">
-          貓咪乾物質計算器
-        </h1>
-        <p className="mx-auto max-w-xl text-lg text-muted-foreground md:text-xl">
-          專為現代貓奴設計的營養分析工具，運用科技守護愛貓的健康。
-        </p>
 
-        <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-          <Button asChild size="lg" className="animate-glow">
-            <Link href="/auth/register">
-              <Rocket className="mr-2 h-5 w-5" />
-              免費開始使用
-            </Link>
-          </Button>
-          <Button asChild size="lg" variant="secondary">
-            <Link href="/auth/login">
-              登入
-            </Link>
-          </Button>
+        {/* 內容區域 - 調整為底部對齊 */}
+        <div className="relative z-10 flex-1 flex flex-col justify-end items-center px-4 pb-32">
+          <div className="max-w-4xl mx-auto text-center animate-slide-up">
+            {/* Title */}
+            <h1 className="mb-6 bg-gradient-to-br from-primary via-accent to-secondary bg-clip-text text-4xl font-extrabold tracking-wider text-transparent md:text-6xl drop-shadow-lg">
+              C A T - R A I S I N G
+            </h1>
+
+            {/* 酷炫按鈕 - 等寬設計 */}
+            <div className="flex flex-col gap-4 sm:flex-row justify-center items-center max-w-md mx-auto">
+              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-primary via-accent to-secondary hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90 text-white font-bold py-4 px-8 rounded-2xl shadow-2xl hover:shadow-primary/40 transition-all duration-500 hover:scale-110 animate-pulse border-2 border-white/20 w-full sm:w-48">
+                <Link href="/auth/register" className="relative z-10 flex items-center justify-center gap-3">
+                  <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                  免費開始使用
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                </Link>
+              </Button>
+              
+              <Button asChild size="lg" className="group relative overflow-hidden bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-semibold py-4 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 border-2 border-white/30 hover:border-white/50 w-full sm:w-48">
+                <Link href="/auth/login" className="relative z-10 flex items-center justify-center gap-3">
+                  登入
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* 向下滾動指示器 */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 animate-bounce">
+          <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
+            <div className="w-1 h-3 bg-white/70 rounded-full mt-2 animate-pulse"></div>
+          </div>
         </div>
       </section>
 
@@ -65,35 +88,6 @@ export default function Home() {
               delay="0.4s"
             />
           </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="relative px-4 py-24">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent"></div>
-        <div className="mx-auto max-w-2xl text-center relative">
-          <Card className="glass overflow-hidden animate-scale-in border-primary/30">
-            <div className="absolute top-0 left-0 w-full h-1 gradient-primary"></div>
-            <CardHeader className="pb-4">
-              <div className="mb-4 inline-flex mx-auto h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/30 to-accent/30 backdrop-blur-sm">
-                <Rocket className="h-8 w-8 text-primary" />
-              </div>
-              <CardTitle className="text-3xl font-bold text-foreground">
-                準備好開始了嗎？
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <p className="mb-8 text-muted-foreground text-lg">
-                無需信用卡，立即註冊，開始為您的愛貓進行科學的營養分析。
-              </p>
-              <Button asChild size="lg" className="w-full gradient-accent text-white hover:scale-105 transition-transform duration-300 animate-glow shadow-2xl">
-                <Link href="/auth/register">
-                  <Rocket className="mr-2 h-5 w-5" />
-                  立即加入
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </section>
     </div>

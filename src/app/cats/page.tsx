@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
 import CatAvatar, { CAT_AVATARS } from '@/components/CatAvatar'
-import { Edit2, Trash2 } from 'lucide-react'
+import { Edit2, Trash2, PawPrint } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import type { Cat } from '@/types'
 
@@ -81,6 +81,7 @@ export default function CatsPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('Form submit triggered') // Debug log
     e.preventDefault()
     if (!user) return
 
@@ -170,6 +171,7 @@ export default function CatsPage() {
   }
 
   const handleCancelEdit = () => {
+    console.log('Cancel edit clicked') // Debug log
     setEditingCat(null)
     setFormData({ name: '', birthday: '', weight: '', avatar_id: 'cat-1' })
     setShowAddForm(false)
@@ -228,16 +230,19 @@ export default function CatsPage() {
         <div className="px-4 py-4">
           <div className="flex items-center justify-between mb-4 animate-slide-up">
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">貓咪管理</h1>
+              <h1 className="text-xl font-bold text-foreground bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">貓咪管理</h1>
               <p className="text-sm text-muted-foreground">管理您的貓咪資料</p>
             </div>
-            <Button 
-              onClick={() => setShowAddForm(true)}
-              disabled={showAddForm}
-              className="gradient-primary text-white px-4 py-2 rounded-xl text-sm hover:scale-105 transition-all duration-300 animate-glow shadow-lg"
-            >
-              + 新增
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="outline" onClick={async () => {
+                const { error } = await supabase.auth.signOut()
+                if (!error) {
+                  router.push('/auth/login')
+                }
+              }} className="text-xs px-2 sm:px-3 py-1 glass border-primary/30 hover:bg-primary/10 transition-all duration-300 hover:scale-105">
+                登出
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -264,13 +269,28 @@ export default function CatsPage() {
                         <button
                           key={avatar.id}
                           type="button"
-                          onClick={() => setFormData({ ...formData, avatar_id: avatar.id })}
-                          className={`p-2 rounded-xl border-2 transition-all duration-300 hover:scale-110 ${
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            console.log(`Avatar ${avatar.id} clicked`)
+                            setFormData({ ...formData, avatar_id: avatar.id })
+                          }}
+                          className={`p-2 rounded-xl border-2 transition-all duration-300 hover:scale-110 touch-manipulation relative ${
                             formData.avatar_id === avatar.id 
                               ? 'border-primary bg-primary/10 shadow-lg' 
                               : 'border-primary/30 hover:border-primary/60'
                           }`}
                           title={avatar.name}
+                          style={{
+                            zIndex: 100,
+                            pointerEvents: 'auto',
+                            touchAction: 'manipulation',
+                            minHeight: '60px',
+                            minWidth: '60px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
                         >
                           <CatAvatar avatarId={avatar.id} size="lg" />
                         </button>
@@ -278,7 +298,7 @@ export default function CatsPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">貓咪姓名 *</Label>
                       <Input
@@ -299,7 +319,7 @@ export default function CatsPage() {
                         type="date"
                         value={formData.birthday}
                         onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
-                        className="flex h-10 w-full rounded-xl border border-primary/30 bg-background/90 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 backdrop-blur-sm transition-all duration-300"
+                        className="glass flex h-10 w-full rounded-xl border border-primary/30 bg-background/90 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 backdrop-blur-sm transition-all duration-300"
                         style={{ colorScheme: 'light' }}
                       />
                       {formData.birthday && (
@@ -320,24 +340,70 @@ export default function CatsPage() {
                         value={formData.weight}
                         onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
                         required
+                        className="glass border-primary/30 focus:border-primary focus:ring-primary"
                       />
                     </div>
                   </div>
 
-                  <div className="flex space-x-2">
-                    <Button type="submit" disabled={submitting} className="gradient-primary text-white hover:scale-105 transition-all duration-300 animate-glow">
+                </form>
+                
+                {/* 按鈕區域完全獨立 */}
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg" style={{ position: 'relative', zIndex: 999 }}>
+                  <div className="flex flex-col gap-3">
+                    <button 
+                      type="button"
+                      disabled={submitting}
+                      className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white py-4 px-6 rounded-lg text-lg font-medium disabled:opacity-50"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        console.log('Manual submit clicked')
+                        if (!submitting) {
+                          const form = document.querySelector('form')
+                          if (form) {
+                            const event = new Event('submit', { bubbles: true, cancelable: true })
+                            form.dispatchEvent(event)
+                          }
+                        }
+                      }}
+                      onTouchStart={() => console.log('Submit touch start')}
+                      onTouchEnd={() => console.log('Submit touch end')}
+                      style={{ 
+                        minHeight: '50px', 
+                        zIndex: 1000, 
+                        pointerEvents: 'auto',
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'rgba(0,0,0,0.1)'
+                      }}
+                    >
                       {submitting ? (editingCat ? '更新中...' : '新增中...') : (editingCat ? '更新貓咪' : '新增貓咪')}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      className="glass border-primary/30 hover:bg-primary/10 transition-all duration-300"
-                      onClick={handleCancelEdit}
+                    </button>
+                    
+                    <button 
+                      type="button"
+                      className="w-full bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 py-4 px-6 rounded-lg text-lg font-medium"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        console.log('Manual cancel clicked')
+                        setEditingCat(null)
+                        setFormData({ name: '', birthday: '', weight: '', avatar_id: 'cat-1' })
+                        setShowAddForm(false)
+                      }}
+                      onTouchStart={() => console.log('Cancel touch start')}
+                      onTouchEnd={() => console.log('Cancel touch end')}
+                      style={{ 
+                        minHeight: '50px', 
+                        zIndex: 1000,
+                        pointerEvents: 'auto',
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'rgba(0,0,0,0.1)'
+                      }}
                     >
                       取消
-                    </Button>
+                    </button>
                   </div>
-                </form>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -356,21 +422,18 @@ export default function CatsPage() {
                   <h3 className="text-lg font-medium text-foreground mb-2">
                     還沒有貓咪資料
                   </h3>
-                  <p className="text-muted-foreground mb-4">
-                    新增您的第一隻貓咪，開始記錄營養資料
+                  <p className="text-muted-foreground">
+                    使用右下角的貓咪按鈕新增您的第一隻貓咪
                   </p>
-                  <Button onClick={() => setShowAddForm(true)} className="gradient-primary text-white hover:scale-105 transition-all duration-300 animate-glow shadow-lg">
-                    新增第一隻貓咪
-                  </Button>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {cats.map((cat, index) => (
                 <div key={cat.id} className="relative">
                   <Link href={`/dashboard?cat=${cat.id}`}>
-                    <Card className="glass border-primary/20 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 hover:scale-105 animate-slide-up group cursor-pointer" style={{animationDelay: `${index * 0.1}s`}}>
+                    <Card className="glass border-primary/20 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 hover:scale-105 animate-slide-up group cursor-pointer rounded-3xl" style={{animationDelay: `${index * 0.1}s`}}>
                       <CardContent className="p-6">
                         <div className="flex items-start gap-3 mb-4">
                           <CatAvatar avatarId={cat.avatar_id} size="lg" className="flex-shrink-0" />
@@ -379,29 +442,11 @@ export default function CatsPage() {
                               {cat.name}
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                              {cat.age} 歲 • {cat.weight} kg
+                              {cat.age} 歲（{cat.birthday ? `${new Date(cat.birthday).toLocaleDateString('zh-TW')}` : '未設定生日'}） • {cat.weight} kg
                             </p>
                           </div>
                         </div>
                         
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">年齡：</span>
-                            <span className="font-medium text-foreground">{cat.age} 歲</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">體重：</span>
-                            <span className="font-medium text-foreground">{cat.weight} kg</span>
-                          </div>
-                          {cat.birthday && (
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">生日：</span>
-                              <span className="font-medium text-foreground">
-                                {new Date(cat.birthday).toLocaleDateString('zh-TW')}
-                              </span>
-                            </div>
-                          )}
-                        </div>
                         
                         <div className="mt-4 pt-4 border-t border-primary/20">
                           <p className="text-xs text-center text-muted-foreground group-hover:text-primary transition-colors duration-300">
@@ -413,7 +458,8 @@ export default function CatsPage() {
                   </Link>
                   
                   {/* 浮動按鈕 */}
-                  <div className="absolute top-3 right-3 flex gap-1 z-10">
+                  {!showAddForm && (
+                  <div className="absolute top-2 right-2 flex gap-1 z-10">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -422,7 +468,7 @@ export default function CatsPage() {
                         e.stopPropagation()
                         handleEdit(cat)
                       }}
-                      className="p-2 hover:scale-110 transition-transform duration-300 text-primary hover:text-primary/80 hover:bg-primary/10 glass border border-primary/30"
+                      className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-300 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-full"
                       title="編輯貓咪"
                     >
                       <Edit2 className="h-4 w-4" />
@@ -435,17 +481,32 @@ export default function CatsPage() {
                         e.stopPropagation()
                         handleDelete(cat.id)
                       }}
-                      className="p-2 hover:scale-110 transition-transform duration-300 text-destructive hover:text-destructive/80 hover:bg-destructive/10 glass border border-destructive/30"
+                      className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-300 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-full"
                       title="刪除貓咪"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
 
+      </div>
+
+      {/* 懸浮新增貓咪按鈕 */}
+      <div className="fixed bottom-20 right-4 z-[9999] group">
+        <button 
+          onClick={() => setShowAddForm(true)}
+          disabled={showAddForm}
+          className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white w-14 h-14 rounded-full shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-110 animate-pulse-slow flex items-center justify-center group-hover:animate-none disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <PawPrint className="h-6 w-6" />
+        </button>
+        <div className="absolute bottom-16 right-0 bg-black/75 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+          新增貓咪
+        </div>
       </div>
 
       {/* Bottom Navigation */}

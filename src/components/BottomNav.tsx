@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 import CatAvatar from './CatAvatar'
 
 export default function BottomNav() {
@@ -11,8 +12,26 @@ export default function BottomNav() {
     {
       href: '/dashboard',
       label: '產品',
-      icon: '📦',
-      activeIcon: '📦'
+      icon: (
+        <Image
+          src="/cat-food-icon.png"
+          alt="產品"
+          width={24}
+          height={24}
+          className="object-contain"
+          unoptimized={true}
+        />
+      ),
+      activeIcon: (
+        <Image
+          src="/cat-food-icon.png"
+          alt="產品"
+          width={24}
+          height={24}
+          className="object-contain"
+          unoptimized={true}
+        />
+      )
     },
     {
       href: '/cats',
@@ -23,7 +42,7 @@ export default function BottomNav() {
   ]
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom z-[9998]">
       <div className="flex items-center justify-around px-2 py-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href

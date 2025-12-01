@@ -23,7 +23,7 @@ export default function CalculatorPage() {
   const [saving, setSaving] = useState(false)
   
   // Form data
-  const [selectedCatId, setSelectedCatId] = useState<string>('none')
+  const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
   const [formData, setFormData] = useState<FoodCalculationInput>({
     brand_name: '',
     product_name: '',
@@ -35,9 +35,12 @@ export default function CalculatorPage() {
     fiber_percent: 0,
     ash_percent: 0,
     moisture_percent: 0,
+    carbohydrate_percent: undefined,
     calcium_percent: undefined,
     phosphorus_percent: undefined,
     sodium_percent: undefined,
+    target_age: undefined,
+    food_type: undefined,
   })
   
   // Smart switching state
@@ -131,14 +134,7 @@ export default function CalculatorPage() {
     }
   }
 
-  const handleCatChange = async (catId: string) => {
-    setSelectedCatId(catId)
-    
-    // Load history for the selected cat (not if "none" is selected)
-    if (catId && catId !== 'none') {
-      await loadCatHistory(catId)
-    }
-  }
+  // Remove handleCatChange since we now use checkboxes
 
   const handleInputChange = (field: keyof FoodCalculationInput, value: string | number | undefined) => {
     setFormData(prev => ({
@@ -181,11 +177,12 @@ export default function CalculatorPage() {
     setSaving(true)
 
     try {
-      const { error } = await supabase
+      // First, create the food calculation record without cat_id
+      const { data: foodCalculation, error: calculationError } = await supabase
         .from('food_calculations')
         .insert({
           user_id: user.id,
-          cat_id: selectedCatId === 'none' ? null : selectedCatId || null,
+          cat_id: null, // We'll handle cat associations separately
           brand_name: formData.brand_name,
           product_name: formData.product_name,
           food_weight: formData.food_weight,
@@ -196,9 +193,12 @@ export default function CalculatorPage() {
           fiber_percent: formData.fiber_percent,
           ash_percent: formData.ash_percent,
           moisture_percent: formData.moisture_percent,
+          carbohydrate_percent: formData.carbohydrate_percent || null,
           calcium_percent: formData.calcium_percent || null,
           phosphorus_percent: formData.phosphorus_percent || null,
           sodium_percent: formData.sodium_percent || null,
+          target_age: formData.target_age || null,
+          food_type: formData.food_type || null,
           dry_matter_content: result.dry_matter_content,
           dm_protein: result.dm_protein,
           dm_fat: result.dm_fat,
@@ -210,32 +210,36 @@ export default function CalculatorPage() {
           calcium_phosphorus_ratio: result.calcium_phosphorus_ratio || null,
           favorited: false
         })
+        .select()
+        .single()
 
-      if (error) {
-        alert('保存失敗：' + error.message)
+      if (calculationError) {
+        alert('保存失敗：' + calculationError.message)
         return
+      }
+
+      // If cats are selected, create associations in the junction table
+      if (selectedCatIds.length > 0) {
+        const catAssociations = selectedCatIds.map(catId => ({
+          food_calculation_id: foodCalculation.id,
+          cat_id: catId
+        }))
+
+        const { error: associationError } = await supabase
+          .from('food_calculation_cats')
+          .insert(catAssociations)
+
+        if (associationError) {
+          // If association fails, we could either delete the calculation or continue
+          console.error('Cat association error:', associationError)
+          alert('記錄已保存，但貓咪關聯失敗：' + associationError.message)
+        }
       }
 
       alert('計算記錄已保存！')
       
-      // 重設表單
-      setFormData({
-        brand_name: '',
-        product_name: '',
-        food_weight: 0,
-        total_calories: undefined,
-        calories_per_100g: undefined,
-        protein_percent: 0,
-        fat_percent: 0,
-        fiber_percent: 0,
-        ash_percent: 0,
-        moisture_percent: 0,
-        calcium_percent: undefined,
-        phosphorus_percent: undefined,
-        sodium_percent: undefined,
-      })
-      setResult(null)
-      setSelectedCatId('none')
+      // 跳轉到產品頁
+      router.push('/dashboard')
 
     } catch (error: any) {
       alert('保存失敗：' + error.message)
@@ -298,78 +302,41 @@ export default function CalculatorPage() {
                 <form onSubmit={handleCalculate} className="space-y-6">
                   
                   {/* Cat Selection */}
-                  <div className="space-y-2">
-                    <Label>選擇貓咪（可選）</Label>
-                    <Select value={selectedCatId} onValueChange={handleCatChange}>
-                      <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
-                        <SelectValue placeholder="選擇要計算的貓咪" />
-                      </SelectTrigger>
-                      <SelectContent className="glass backdrop-blur-lg border-primary/20">
-                        <SelectItem value="none" className="hover:bg-primary/10">不指定貓咪</SelectItem>
-                        {cats.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id} className="hover:bg-primary/10">
+                  <div className="space-y-3">
+                    <Label>選擇貓咪（可選，可多選）</Label>
+                    <div className="glass p-4 rounded-xl border border-primary/30 space-y-2 max-h-40 overflow-y-auto">
+                      {cats.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-2">尚未新增貓咪</p>
+                      ) : (
+                        cats.map((cat) => (
+                          <label key={cat.id} className="flex items-center gap-3 p-2 hover:bg-primary/5 rounded-lg cursor-pointer transition-all duration-200">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                              checked={selectedCatIds.includes(cat.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedCatIds(prev => [...prev, cat.id])
+                                } else {
+                                  setSelectedCatIds(prev => prev.filter(id => id !== cat.id))
+                                }
+                              }}
+                            />
                             <div className="flex items-center gap-2">
                               <CatAvatar avatarId={cat.avatar_id} size="sm" />
-                              {cat.name} ({cat.age}歲, {cat.weight}kg)
+                              <span className="text-sm font-medium">{cat.name}</span>
+                              <span className="text-xs text-muted-foreground">({cat.age}歲, {cat.weight}kg)</span>
                             </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {loadingHistory && selectedCatId && selectedCatId !== 'none' && (
-                      <p className="text-sm text-blue-600">載入歷史記錄中...</p>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    {selectedCatIds.length > 0 && (
+                      <p className="text-sm text-primary">已選擇 {selectedCatIds.length} 隻貓咪</p>
                     )}
                   </div>
 
-                  {/* Historical Records */}
-                  {selectedCatId && selectedCatId !== 'none' && catHistory[selectedCatId] && catHistory[selectedCatId].length > 0 && (
-                    <div className="space-y-2">
-                      <Label>歷史糧食記錄</Label>
-                      <div className="glass p-4 rounded-xl space-y-2 max-h-40 overflow-y-auto border border-primary/30">
-                        {catHistory[selectedCatId].map((record) => (
-                          <div 
-                            key={record.id} 
-                            className="flex justify-between items-center p-2 glass rounded border border-primary/20 cursor-pointer hover:bg-primary/10 hover:border-primary/40 transition-all duration-300"
-                            onClick={() => {
-                              setFormData({
-                                brand_name: record.brand_name || '',
-                                product_name: record.product_name || '',
-                                food_weight: record.food_weight || 0,
-                                total_calories: record.total_calories,
-                                calories_per_100g: record.calories_per_100g,
-                                protein_percent: record.protein_percent || 0,
-                                fat_percent: record.fat_percent || 0,
-                                fiber_percent: record.fiber_percent || 0,
-                                ash_percent: record.ash_percent || 0,
-                                moisture_percent: record.moisture_percent || 0,
-                                calcium_percent: record.calcium_percent,
-                                phosphorus_percent: record.phosphorus_percent,
-                                sodium_percent: record.sodium_percent,
-                              })
-                              setResult(null)
-                              setErrors([])
-                            }}
-                          >
-                            <div>
-                              <div className="font-medium text-sm">
-                                {record.brand_name} - {record.product_name}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                蛋白質: {record.protein_percent}% • 脂肪: {record.fat_percent}% • 
-                                {new Date(record.created_at).toLocaleDateString('zh-TW')}
-                              </div>
-                            </div>
-                            <div className="text-xs text-primary">
-                              點擊套用
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        點擊任一記錄即可快速套用到表單中
-                      </p>
-                    </div>
-                  )}
+                  {/* Removed historical records for simplicity with multiple cat selection */}
 
                   {/* Basic Information */}
                   <div className="space-y-4">
@@ -396,6 +363,7 @@ export default function CalculatorPage() {
                           value={formData.product_name}
                           onChange={(e) => handleInputChange('product_name', e.target.value)}
                           required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
                     </div>
@@ -416,6 +384,7 @@ export default function CalculatorPage() {
                           value={formData.food_weight || ''}
                           onChange={(e) => handleInputChange('food_weight', parseFloat(e.target.value) || 0)}
                           required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
                       <div className="space-y-2">
@@ -428,6 +397,7 @@ export default function CalculatorPage() {
                           placeholder="可選"
                           value={formData.total_calories || ''}
                           onChange={(e) => handleInputChange('total_calories', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
                       <div className="space-y-2">
@@ -440,6 +410,7 @@ export default function CalculatorPage() {
                           placeholder="可選"
                           value={formData.calories_per_100g || ''}
                           onChange={(e) => handleInputChange('calories_per_100g', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
                     </div>
@@ -461,6 +432,7 @@ export default function CalculatorPage() {
                           value={formData.protein_percent || ''}
                           onChange={(e) => handleInputChange('protein_percent', parseFloat(e.target.value) || 0)}
                           required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
                       <div className="space-y-2">
@@ -475,6 +447,21 @@ export default function CalculatorPage() {
                           value={formData.fat_percent || ''}
                           onChange={(e) => handleInputChange('fat_percent', parseFloat(e.target.value) || 0)}
                           required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="carbohydrate">碳水</Label>
+                        <Input
+                          id="carbohydrate"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="例如：25"
+                          value={formData.carbohydrate_percent || ''}
+                          onChange={(e) => handleInputChange('carbohydrate_percent', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
                       <div className="space-y-2">
@@ -489,6 +476,7 @@ export default function CalculatorPage() {
                           value={formData.fiber_percent || ''}
                           onChange={(e) => handleInputChange('fiber_percent', parseFloat(e.target.value) || 0)}
                           required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
                       <div className="space-y-2">
@@ -503,6 +491,7 @@ export default function CalculatorPage() {
                           value={formData.ash_percent || ''}
                           onChange={(e) => handleInputChange('ash_percent', parseFloat(e.target.value) || 0)}
                           required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
                       <div className="space-y-2">
@@ -517,6 +506,7 @@ export default function CalculatorPage() {
                           value={formData.moisture_percent || ''}
                           onChange={(e) => handleInputChange('moisture_percent', parseFloat(e.target.value) || 0)}
                           required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
                     </div>
@@ -537,6 +527,7 @@ export default function CalculatorPage() {
                           placeholder="例如：1.2"
                           value={formData.calcium_percent || ''}
                           onChange={(e) => handleInputChange('calcium_percent', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
                       <div className="space-y-2">
@@ -550,6 +541,7 @@ export default function CalculatorPage() {
                           placeholder="例如：1.0"
                           value={formData.phosphorus_percent || ''}
                           onChange={(e) => handleInputChange('phosphorus_percent', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
                       <div className="space-y-2">
@@ -563,7 +555,45 @@ export default function CalculatorPage() {
                           placeholder="例如：0.5"
                           value={formData.sodium_percent || ''}
                           onChange={(e) => handleInputChange('sodium_percent', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Product Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">產品資訊 - 可選</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="target_age">適用年齡</Label>
+                        <Select value={formData.target_age || ''} onValueChange={(value) => handleInputChange('target_age', value || undefined)}>
+                          <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
+                            <SelectValue placeholder="選擇適用年齡" />
+                          </SelectTrigger>
+                          <SelectContent className="glass backdrop-blur-lg border-primary/20">
+                            <SelectItem value="幼貓" className="hover:bg-primary/10">幼貓</SelectItem>
+                            <SelectItem value="成貓" className="hover:bg-primary/10">成貓</SelectItem>
+                            <SelectItem value="老貓" className="hover:bg-primary/10">老貓</SelectItem>
+                            <SelectItem value="全年齡" className="hover:bg-primary/10">全年齡</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="food_type">種類</Label>
+                        <Select value={formData.food_type || ''} onValueChange={(value) => handleInputChange('food_type', value || undefined)}>
+                          <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
+                            <SelectValue placeholder="選擇產品種類" />
+                          </SelectTrigger>
+                          <SelectContent className="glass backdrop-blur-lg border-primary/20">
+                            <SelectItem value="主食罐" className="hover:bg-primary/10">主食罐</SelectItem>
+                            <SelectItem value="餐包" className="hover:bg-primary/10">餐包</SelectItem>
+                            <SelectItem value="主食凍乾" className="hover:bg-primary/10">主食凍乾</SelectItem>
+                            <SelectItem value="零食凍乾" className="hover:bg-primary/10">零食凍乾</SelectItem>
+                            <SelectItem value="生食" className="hover:bg-primary/10">生食</SelectItem>
+                            <SelectItem value="乾糧" className="hover:bg-primary/10">乾糧</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
@@ -602,63 +632,141 @@ export default function CalculatorPage() {
                     
                     {/* Main Results */}
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-foreground animate-slide-up">主要營養分析</h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-gradient-to-br from-primary/10 to-primary/20 p-4 rounded-2xl border border-primary/30 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 hover:scale-105 animate-scale-in group">
-                          <div className="text-xs text-primary font-medium mb-1 group-hover:text-primary transition-colors duration-300">乾物質含量</div>
-                          <div className="text-xl font-bold text-primary">{result.dry_matter_content}%</div>
-                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-primary/30 to-primary/50 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <h3 className="text-lg font-semibold text-foreground animate-slide-up">營養成分乾物質分析</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          result.dm_protein >= 35 
+                            ? 'from-success/10 to-success/20 border-success/30 hover:shadow-success/20'
+                            : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                        }`}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            result.dm_protein >= 35 ? 'text-success' : 'text-red-600'
+                          }`}>
+                            蛋白質乾物比 (≥35%)
+                          </div>
+                          <div className={`text-xl font-bold ${result.dm_protein >= 35 ? 'text-success' : 'text-red-600'}`}>
+                            {result.dm_protein}%
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
                         </div>
-                        <div className="bg-gradient-to-br from-success/10 to-success/20 p-4 rounded-2xl border border-success/30 hover:shadow-xl hover:shadow-success/20 transition-all duration-300 hover:scale-105 animate-scale-in group" style={{animationDelay: '0.1s'}}>
-                          <div className="text-xs text-success font-medium mb-1 group-hover:text-success transition-colors duration-300">DM 蛋白質</div>
-                          <div className="text-xl font-bold text-success">{result.dm_protein}%</div>
-                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-success/30 to-success/50 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          (result.dm_fat >= 30 && result.dm_fat <= 50)
+                            ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                            : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                        }`} style={{animationDelay: '0.1s'}}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            (result.dm_fat >= 30 && result.dm_fat <= 50) ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            脂肪乾物比 (30-50%)
+                          </div>
+                          <div className={`text-xl font-bold ${(result.dm_fat >= 30 && result.dm_fat <= 50) ? 'text-green-600' : 'text-red-600'}`}>
+                            {result.dm_fat}%
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
                         </div>
-                        <div className="bg-gradient-to-br from-secondary/10 to-secondary/20 p-4 rounded-2xl border border-secondary/30 hover:shadow-xl hover:shadow-secondary/20 transition-all duration-300 hover:scale-105 animate-scale-in group" style={{animationDelay: '0.2s'}}>
-                          <div className="text-xs text-secondary font-medium mb-1 group-hover:text-secondary transition-colors duration-300">DM 脂肪</div>
-                          <div className="text-xl font-bold text-secondary">{result.dm_fat}%</div>
-                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-secondary/30 to-secondary/50 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          (() => {
+                            if (!formData.carbohydrate_percent) return 'from-gray-100/60 to-gray-200/60 border-gray-300/30 hover:shadow-gray-200/20'
+                            const carbDM = ((formData.carbohydrate_percent / result.dry_matter_content) * 100)
+                            return carbDM <= 10
+                              ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                              : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                          })()
+                        }`} style={{animationDelay: '0.2s'}}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            (() => {
+                              if (!formData.carbohydrate_percent) return 'text-gray-600'
+                              const carbDM = ((formData.carbohydrate_percent / result.dry_matter_content) * 100)
+                              return carbDM <= 10 ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            碳水化合物乾物比 (≤10%)
+                          </div>
+                          <div className={`text-xl font-bold ${
+                            (() => {
+                              if (!formData.carbohydrate_percent) return 'text-gray-600'
+                              const carbDM = ((formData.carbohydrate_percent / result.dry_matter_content) * 100)
+                              return carbDM <= 10 ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            {formData.carbohydrate_percent 
+                              ? ((formData.carbohydrate_percent / result.dry_matter_content) * 100).toFixed(1) + '%'
+                              : '未提供'
+                            }
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
                         </div>
-                        <div className="bg-gradient-to-br from-accent/10 to-accent/20 p-4 rounded-2xl border border-accent/30 hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 hover:scale-105 animate-scale-in group" style={{animationDelay: '0.3s'}}>
-                          <div className="text-xs text-accent font-medium mb-1 group-hover:text-accent transition-colors duration-300">DM 纖維</div>
-                          <div className="text-xl font-bold text-accent">{result.dm_fiber}%</div>
-                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-accent/30 to-accent/50 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          (result.dm_fiber >= 2.5 && result.dm_fiber <= 5)
+                            ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                            : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                        }`} style={{animationDelay: '0.3s'}}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            (result.dm_fiber >= 2.5 && result.dm_fiber <= 5) ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            纖維乾物比 (2.5-5%)
+                          </div>
+                          <div className={`text-xl font-bold ${(result.dm_fiber >= 2.5 && result.dm_fiber <= 5) ? 'text-green-600' : 'text-red-600'}`}>
+                            {result.dm_fiber}%
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                        </div>
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          (() => {
+                            if (!formData.phosphorus_percent) return 'from-gray-100/60 to-gray-200/60 border-gray-300/30 hover:shadow-gray-200/20'
+                            // 假設 1% 磷含量約等於 300mg/kcal，所以 <350mg/kcal 約為 <1.2%
+                            return formData.phosphorus_percent <= 1.2
+                              ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                              : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                          })()
+                        }`} style={{animationDelay: '0.4s'}}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            (() => {
+                              if (!formData.phosphorus_percent) return 'text-gray-600'
+                              return formData.phosphorus_percent <= 1.2 ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            磷含量 (≤1.2%)
+                          </div>
+                          <div className={`text-xl font-bold ${
+                            (() => {
+                              if (!formData.phosphorus_percent) return 'text-gray-600'
+                              return formData.phosphorus_percent <= 1.2 ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            {formData.phosphorus_percent ? `${formData.phosphorus_percent}%` : '未提供'}
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                        </div>
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          (() => {
+                            if (!result.calcium_phosphorus_ratio) return 'from-gray-100/60 to-gray-200/60 border-gray-300/30 hover:shadow-gray-200/20'
+                            return (result.calcium_phosphorus_ratio >= 1.1 && result.calcium_phosphorus_ratio <= 1.8)
+                              ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                              : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                          })()
+                        }`} style={{animationDelay: '0.5s'}}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            (() => {
+                              if (!result.calcium_phosphorus_ratio) return 'text-gray-600'
+                              return (result.calcium_phosphorus_ratio >= 1.1 && result.calcium_phosphorus_ratio <= 1.8) ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            鈣磷比 (1.1-1.8)
+                          </div>
+                          <div className={`text-xl font-bold ${
+                            (() => {
+                              if (!result.calcium_phosphorus_ratio) return 'text-gray-600'
+                              return (result.calcium_phosphorus_ratio >= 1.1 && result.calcium_phosphorus_ratio <= 1.8) ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            {result.calcium_phosphorus_ratio ? `${result.calcium_phosphorus_ratio.toFixed(2)}:1` : '未提供'}
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Additional Results */}
-                    {(result.calorie_density || result.protein_calorie_ratio || result.calcium_phosphorus_ratio) && (
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-medium">進階分析</h3>
-                        <div className="space-y-2">
-                          {result.calorie_density && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">熱量密度：</span>
-                              <span className="font-medium">{result.calorie_density} kcal/100g</span>
-                            </div>
-                          )}
-                          {result.protein_calorie_ratio && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">蛋白質熱量比：</span>
-                              <span className="font-medium">{result.protein_calorie_ratio}%</span>
-                            </div>
-                          )}
-                          {result.fat_calorie_ratio && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">脂肪熱量比：</span>
-                              <span className="font-medium">{result.fat_calorie_ratio}%</span>
-                            </div>
-                          )}
-                          {result.calcium_phosphorus_ratio && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">鈣磷比：</span>
-                              <span className="font-medium">{result.calcium_phosphorus_ratio}:1</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
 
                     {/* Save Button */}
                     <div className="pt-4 border-t border-gray-100">

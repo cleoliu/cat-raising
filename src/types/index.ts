@@ -30,9 +30,12 @@ export interface FoodCalculationInput {
   fiber_percent: number
   ash_percent: number
   moisture_percent: number
+  carbohydrate_percent?: number
   calcium_percent?: number
   phosphorus_percent?: number
   sodium_percent?: number
+  target_age?: string
+  food_type?: string
 }
 
 export interface FoodCalculation {
@@ -49,9 +52,12 @@ export interface FoodCalculation {
   fiber_percent: number
   ash_percent: number
   moisture_percent: number
+  carbohydrate_percent: number | null
   calcium_percent: number | null
   phosphorus_percent: number | null
   sodium_percent: number | null
+  target_age: string | null
+  food_type: string | null
   dry_matter_content: number
   dm_protein: number
   dm_fat: number
@@ -77,4 +83,11 @@ export interface CalculationResult {
   protein_calorie_ratio?: number
   fat_calorie_ratio?: number
   calcium_phosphorus_ratio?: number
+}
+
+export interface FoodCalculationCat {
+  id: string
+  food_calculation_id: string
+  cat_id: string
+  created_at: string
 }

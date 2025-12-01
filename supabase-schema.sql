@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS public.food_calculations (
     fiber_percent DECIMAL(5,2) NOT NULL CHECK (fiber_percent >= 0 AND fiber_percent <= 100),
     ash_percent DECIMAL(5,2) NOT NULL CHECK (ash_percent >= 0 AND ash_percent <= 100),
     moisture_percent DECIMAL(5,2) NOT NULL CHECK (moisture_percent >= 0 AND moisture_percent <= 100),
+    carbohydrate_percent DECIMAL(5,2) CHECK (carbohydrate_percent >= 0 AND carbohydrate_percent <= 100),
     
     -- 礦物質成分
     calcium_percent DECIMAL(5,2) CHECK (calcium_percent >= 0 AND calcium_percent <= 100),
@@ -58,6 +59,10 @@ CREATE TABLE IF NOT EXISTS public.food_calculations (
     protein_calorie_ratio DECIMAL(5,2),
     fat_calorie_ratio DECIMAL(5,2),
     calcium_phosphorus_ratio DECIMAL(5,2),
+    
+    -- 產品資訊
+    target_age VARCHAR(20),
+    food_type VARCHAR(20),
     
     -- 額外資訊
     notes TEXT,

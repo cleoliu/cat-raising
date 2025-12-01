@@ -70,7 +70,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md animate-slide-up">
           
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary/30 to-accent/30 rounded-3xl mb-6 shadow-lg backdrop-blur-sm ring-2 ring-primary/20 animate-float">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-3xl mb-6 shadow-lg backdrop-blur-sm ring-2 ring-primary/20 animate-float">
               <CatAvatar avatarId="cat-1" size="xl" />
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">歡迎回來</h1>
@@ -123,7 +123,7 @@ export default function LoginPage() {
 
               <Button 
                 type="submit" 
-                className="w-full gradient-primary text-white hover:scale-105 transition-all duration-300 h-12 rounded-xl font-semibold shadow-lg animate-glow" 
+                className="w-full bg-gradient-to-r from-yellow-200 to-yellow-300 hover:from-yellow-300 hover:to-yellow-400 text-gray-800 hover:scale-105 transition-all duration-300 h-12 rounded-xl font-semibold shadow-lg" 
                 disabled={loading}
               >
                 <LogIn className="mr-2 h-5 w-5" />
