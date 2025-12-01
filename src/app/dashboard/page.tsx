@@ -86,7 +86,7 @@ function DashboardContent() {
     target_age: '',
     food_type: ''
   })
-  const [selectedCatId, setSelectedCatId] = useState<string>('')
+  const [editSelectedCatId, setEditSelectedCatId] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -249,7 +249,7 @@ function DashboardContent() {
       food_type: record.food_type || ''
     })
     // Set currently associated cat
-    setSelectedCatId(record.cat_id || '')
+    setEditSelectedCatId(record.cat_id || '')
     setShowEditForm(true)
   }
 
@@ -326,7 +326,7 @@ function DashboardContent() {
         calcium_phosphorus_ratio: (formData.calcium_percent && formData.phosphorus_percent && parseFloat(formData.phosphorus_percent) > 0) 
           ? parseFloat((parseFloat(formData.calcium_percent) / parseFloat(formData.phosphorus_percent)).toFixed(2))
           : null,
-        cat_id: selectedCatId || null
+        cat_id: editSelectedCatId || null
       }
 
       const { error } = await supabase
@@ -344,12 +344,12 @@ function DashboardContent() {
 
       // Reload records to get updated associations
       if (user) {
-        await loadRecords(user.id, selectedCatId)
+        await loadRecords(user.id)
       }
       
       setShowEditForm(false)
       setEditingRecord(null)
-      setSelectedCatId('')
+      setEditSelectedCatId('')
       setFormData({
         brand_name: '',
         product_name: '',
@@ -379,7 +379,7 @@ function DashboardContent() {
   const handleCancelEdit = () => {
     setEditingRecord(null)
     setShowEditForm(false)
-    setSelectedCatId('')
+    setEditSelectedCatId('')
     setFormData({
       brand_name: '',
       product_name: '',
@@ -420,7 +420,7 @@ function DashboardContent() {
         setSelectedCatId(catParam)
         await loadRecords(user.id, catParam)
       } else {
-        await loadRecords(user.id, selectedCatId)
+        await loadRecords(user.id)
       }
       
       // 如果有 refresh 參數，清除 URL 中的參數
@@ -448,7 +448,7 @@ function DashboardContent() {
   // 當選擇貓咪改變時重新載入記錄
   useEffect(() => {
     if (user) {
-      loadRecords(user.id, selectedCatId)
+      loadRecords(user.id)
     }
   }, [selectedCatId, user])
 
@@ -779,7 +779,7 @@ function DashboardContent() {
                 <div className="space-y-3">
                   <h3 className="text-lg font-medium">關聯貓咪 - 可選</h3>
                   <div className="glass p-4 rounded-xl border border-primary/30">
-                    <Select value={selectedCatId} onValueChange={setSelectedCatId}>
+                    <Select value={editSelectedCatId} onValueChange={setEditSelectedCatId}>
                       <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
                         <SelectValue placeholder="選擇一隻貓咪" />
                       </SelectTrigger>
@@ -796,8 +796,8 @@ function DashboardContent() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {selectedCatId && (
-                    <p className="text-sm text-primary">已選擇: {cats.find(c => c.id === selectedCatId)?.name}</p>
+                  {editSelectedCatId && (
+                    <p className="text-sm text-primary">已選擇: {cats.find(c => c.id === editSelectedCatId)?.name}</p>
                   )}
                 </div>
 
