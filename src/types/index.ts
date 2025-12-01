@@ -47,6 +47,7 @@ export interface FoodCalculation {
   food_weight: number
   total_calories: number | null
   calories_per_100g: number | null
+  calories: number | null
   protein_percent: number
   fat_percent: number
   fiber_percent: number
@@ -66,6 +67,7 @@ export interface FoodCalculation {
   calorie_density: number | null
   protein_calorie_ratio: number | null
   fat_calorie_ratio: number | null
+  carbohydrate_calorie_ratio: number | null
   calcium_phosphorus_ratio: number | null
   notes: string | null
   favorited: boolean
@@ -82,6 +84,7 @@ export interface CalculationResult {
   calorie_density?: number
   protein_calorie_ratio?: number
   fat_calorie_ratio?: number
+  carbohydrate_calorie_ratio?: number
   calcium_phosphorus_ratio?: number
 }
 

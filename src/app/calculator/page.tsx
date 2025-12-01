@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { calculateNutrition, validateNutritionInput } from '@/lib/calculations'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,8 @@ export default function CalculatorPage() {
   const [loading, setLoading] = useState(true)
   const [calculating, setCalculating] = useState(false)
   const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
+  const lastSaveTime = useRef(0)
   
   // Form data
   const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
@@ -172,9 +174,16 @@ export default function CalculatorPage() {
   }
 
   const handleSave = async () => {
-    if (!user || !result) return
+    const now = Date.now()
+    
+    // 防止重複提交：檢查狀態和時間間隔
+    if (!user || !result || saving || savingRef.current || (now - lastSaveTime.current < 2000)) {
+      return
+    }
 
     setSaving(true)
+    savingRef.current = true
+    lastSaveTime.current = now
 
     try {
       // First, create the food calculation record without cat_id
@@ -207,6 +216,7 @@ export default function CalculatorPage() {
           calorie_density: result.calorie_density || null,
           protein_calorie_ratio: result.protein_calorie_ratio || null,
           fat_calorie_ratio: result.fat_calorie_ratio || null,
+          carbohydrate_calorie_ratio: result.carbohydrate_calorie_ratio || null,
           calcium_phosphorus_ratio: result.calcium_phosphorus_ratio || null,
           favorited: false
         })
@@ -220,31 +230,42 @@ export default function CalculatorPage() {
 
       // If cats are selected, create associations in the junction table
       if (selectedCatIds.length > 0) {
+        console.log('Saving cat associations:', selectedCatIds, 'for calculation:', foodCalculation.id)
+        
         const catAssociations = selectedCatIds.map(catId => ({
           food_calculation_id: foodCalculation.id,
           cat_id: catId
         }))
 
-        const { error: associationError } = await supabase
+        // Use upsert to handle potential duplicates
+        const { data: insertedData, error: associationError } = await supabase
           .from('food_calculation_cats')
-          .insert(catAssociations)
+          .upsert(catAssociations, {
+            onConflict: 'food_calculation_id,cat_id'
+          })
+          .select()
 
         if (associationError) {
           // If association fails, we could either delete the calculation or continue
           console.error('Cat association error:', associationError)
           alert('記錄已保存，但貓咪關聯失敗：' + associationError.message)
+        } else {
+          console.log('Cat associations saved successfully:', insertedData)
         }
+      } else {
+        console.log('No cats selected for association')
       }
 
       alert('計算記錄已保存！')
       
-      // 跳轉到產品頁
-      router.push('/dashboard')
+      // 跳轉到產品頁並強制刷新
+      router.push('/dashboard?refresh=' + Date.now())
 
     } catch (error: any) {
       alert('保存失敗：' + error.message)
     } finally {
       setSaving(false)
+      savingRef.current = false
     }
   }
 
@@ -766,6 +787,72 @@ export default function CalculatorPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Calorie Ratios - Only show if calorie data is available */}
+                    {(result.protein_calorie_ratio || result.fat_calorie_ratio || result.carbohydrate_calorie_ratio) && (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-foreground animate-slide-up">熱量比分析</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          {result.protein_calorie_ratio && (
+                            <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                              result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 50
+                                ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                                : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                            }`}>
+                              <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                                result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                蛋白質熱量比 (45-50%)
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {result.protein_calorie_ratio}%
+                              </div>
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                            </div>
+                          )}
+                          {result.fat_calorie_ratio && (
+                            <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                              result.fat_calorie_ratio >= 35 && result.fat_calorie_ratio <= 45
+                                ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                                : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                            }`}>
+                              <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                                result.fat_calorie_ratio >= 35 && result.fat_calorie_ratio <= 45 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                脂肪熱量比 (35-45%)
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                result.fat_calorie_ratio >= 35 && result.fat_calorie_ratio <= 45 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {result.fat_calorie_ratio}%
+                              </div>
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                            </div>
+                          )}
+                          {result.carbohydrate_calorie_ratio && (
+                            <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                              result.carbohydrate_calorie_ratio <= 10
+                                ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                                : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                            }`}>
+                              <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                                result.carbohydrate_calorie_ratio <= 10 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                碳水熱量比 (≤10%)
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                result.carbohydrate_calorie_ratio <= 10 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {result.carbohydrate_calorie_ratio}%
+                              </div>
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
 
                     {/* Save Button */}

@@ -38,11 +38,15 @@ interface FoodRecord {
   sodium_percent: number | null
   target_age: string | null
   food_type: string | null
+  calories: number | null
   dry_matter_content: number
   dm_protein: number
   dm_fat: number
   dm_fiber: number
   dm_ash: number
+  protein_calorie_ratio: number | null
+  fat_calorie_ratio: number | null
+  carbohydrate_calorie_ratio: number | null
   calcium_phosphorus_ratio: number | null
   favorited: boolean
   created_at: string
@@ -244,6 +248,31 @@ function DashboardContent() {
       const dmFiber = (fiber / dryMatter) * 100
       const dmAsh = (ash / dryMatter) * 100
 
+      // Calculate calorie ratios using theoretical calorie values from nutrients
+      let proteinCalorieRatio = null
+      let fatCalorieRatio = null
+      let carbohydrateCalorieRatio = null
+
+      // Calculate actual nutrient amounts in dry matter (per 100g)
+      const proteinGrams = (protein / 100) * dryMatter / 100
+      const fatGrams = (fat / 100) * dryMatter / 100
+      const carbGrams = formData.carbohydrate_percent ? (parseFloat(formData.carbohydrate_percent) / 100) * dryMatter / 100 : 0
+
+      // Calculate calories from each nutrient
+      const proteinCalories = proteinGrams * 3.5
+      const fatCalories = fatGrams * 8.5
+      const carbCalories = carbGrams * 3.5
+
+      const totalCalculatedCalories = proteinCalories + fatCalories + carbCalories
+
+      if (totalCalculatedCalories > 0) {
+        proteinCalorieRatio = parseFloat(((proteinCalories / totalCalculatedCalories) * 100).toFixed(1))
+        fatCalorieRatio = parseFloat(((fatCalories / totalCalculatedCalories) * 100).toFixed(1))
+        if (formData.carbohydrate_percent) {
+          carbohydrateCalorieRatio = parseFloat(((carbCalories / totalCalculatedCalories) * 100).toFixed(1))
+        }
+      }
+
       const updatedData = {
         brand_name: formData.brand_name,
         product_name: formData.product_name,
@@ -263,6 +292,9 @@ function DashboardContent() {
         dm_fat: parseFloat(dmFat.toFixed(1)),
         dm_fiber: parseFloat(dmFiber.toFixed(1)),
         dm_ash: parseFloat(dmAsh.toFixed(1)),
+        protein_calorie_ratio: proteinCalorieRatio,
+        fat_calorie_ratio: fatCalorieRatio,
+        carbohydrate_calorie_ratio: carbohydrateCalorieRatio,
         calcium_phosphorus_ratio: (formData.calcium_percent && formData.phosphorus_percent && parseFloat(formData.phosphorus_percent) > 0) 
           ? parseFloat((parseFloat(formData.calcium_percent) / parseFloat(formData.phosphorus_percent)).toFixed(2))
           : null
@@ -299,9 +331,12 @@ function DashboardContent() {
           cat_id: catId
         }))
 
+        // Use upsert to handle potential duplicates
         const { error: insertError } = await supabase
           .from('food_calculation_cats')
-          .insert(catAssociations)
+          .upsert(catAssociations, {
+            onConflict: 'food_calculation_id,cat_id'
+          })
 
         if (insertError) {
           console.error('Error creating new cat associations:', insertError)
@@ -376,11 +411,18 @@ function DashboardContent() {
       
       // 檢查 URL 參數是否指定了貓咪
       const catParam = searchParams.get('cat')
+      const refreshParam = searchParams.get('refresh')
+      
       if (catParam) {
         setSelectedCatId(catParam)
         await loadRecords(user.id, catParam)
       } else {
         await loadRecords(user.id, selectedCatId)
+      }
+      
+      // 如果有 refresh 參數，清除 URL 中的參數
+      if (refreshParam) {
+        router.replace('/dashboard', { scroll: false })
       }
       
       setLoading(false)
@@ -1020,6 +1062,71 @@ function DashboardContent() {
                     </div>
                   </div>
                 </div>
+
+                {/* Separator between dry matter indicators and calorie ratios */}
+                {(record.protein_calorie_ratio || record.fat_calorie_ratio || record.carbohydrate_calorie_ratio) && (
+                  <div className="border-t border-gray-200/60 my-3"></div>
+                )}
+
+                {/* Calorie Ratios - Only show if calorie data is available */}
+                {(record.protein_calorie_ratio || record.fat_calorie_ratio || record.carbohydrate_calorie_ratio) && (
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {record.protein_calorie_ratio && (
+                      <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
+                        record.protein_calorie_ratio >= 45 && record.protein_calorie_ratio <= 50
+                          ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                          : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                      }`}>
+                        <div className={`text-xs font-medium ${
+                          record.protein_calorie_ratio >= 45 && record.protein_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          蛋白質熱量比 (45-50%)
+                        </div>
+                        <div className={`text-sm font-bold ${
+                          record.protein_calorie_ratio >= 45 && record.protein_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {record.protein_calorie_ratio}%
+                        </div>
+                      </div>
+                    )}
+                    {record.fat_calorie_ratio && (
+                      <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
+                        record.fat_calorie_ratio >= 35 && record.fat_calorie_ratio <= 45
+                          ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                          : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                      }`}>
+                        <div className={`text-xs font-medium ${
+                          record.fat_calorie_ratio >= 35 && record.fat_calorie_ratio <= 45 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          脂肪熱量比 (35-45%)
+                        </div>
+                        <div className={`text-sm font-bold ${
+                          record.fat_calorie_ratio >= 35 && record.fat_calorie_ratio <= 45 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {record.fat_calorie_ratio}%
+                        </div>
+                      </div>
+                    )}
+                    {record.carbohydrate_calorie_ratio && (
+                      <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
+                        record.carbohydrate_calorie_ratio <= 10
+                          ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                          : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                      }`}>
+                        <div className={`text-xs font-medium ${
+                          record.carbohydrate_calorie_ratio <= 10 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          碳水熱量比 (≤10%)
+                        </div>
+                        <div className={`text-sm font-bold ${
+                          record.carbohydrate_calorie_ratio <= 10 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {record.carbohydrate_calorie_ratio}%
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="text-xs text-muted-foreground space-y-1">
                   <div>

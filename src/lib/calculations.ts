@@ -24,14 +24,41 @@ export function calculateNutrition(input: FoodCalculationInput): CalculationResu
     result.calorie_density = Number(caloreDensity.toFixed(2))
   }
 
+  // 熱量比計算 - 使用現有的熱量資訊
+  let caloriesPerGram: number | undefined
+  
   if (input.calories_per_100g) {
-    // 蛋白質熱量比 = (乾物質基準蛋白質% × 4 kcal/g) / 單位熱量 × 100%
-    const proteinCalorieRatio = (dmProtein * 4) / input.calories_per_100g * 100
-    result.protein_calorie_ratio = Number(proteinCalorieRatio.toFixed(2))
+    caloriesPerGram = input.calories_per_100g / 100
+  } else if (input.total_calories && input.food_weight) {
+    caloriesPerGram = input.total_calories / input.food_weight
+  }
 
-    // 脂肪熱量比 = (乾物質基準脂肪% × 9 kcal/g) / 單位熱量 × 100%
-    const fatCalorieRatio = (dmFat * 9) / input.calories_per_100g * 100
-    result.fat_calorie_ratio = Number(fatCalorieRatio.toFixed(2))
+  if (caloriesPerGram) {
+    // 計算各營養素在乾物質中的實際含量（公克）
+    const proteinGrams = (input.protein_percent / 100) * (100 - input.moisture_percent) / 100
+    const fatGrams = (input.fat_percent / 100) * (100 - input.moisture_percent) / 100
+    const carbGrams = input.carbohydrate_percent ? (input.carbohydrate_percent / 100) * (100 - input.moisture_percent) / 100 : 0
+
+    // 計算各營養素提供的熱量
+    const proteinCalories = proteinGrams * 3.5 // 蛋白質每公克 3.5 kcal
+    const fatCalories = fatGrams * 8.5 // 脂肪每公克 8.5 kcal  
+    const carbCalories = carbGrams * 3.5 // 碳水化合物每公克 3.5 kcal
+
+    // 計算總熱量
+    const totalCalculatedCalories = proteinCalories + fatCalories + carbCalories
+
+    if (totalCalculatedCalories > 0) {
+      // 蛋白質熱量比
+      result.protein_calorie_ratio = Number(((proteinCalories / totalCalculatedCalories) * 100).toFixed(1))
+      
+      // 脂肪熱量比  
+      result.fat_calorie_ratio = Number(((fatCalories / totalCalculatedCalories) * 100).toFixed(1))
+      
+      // 碳水化合物熱量比（僅當有提供碳水化合物數據時）
+      if (input.carbohydrate_percent) {
+        result.carbohydrate_calorie_ratio = Number(((carbCalories / totalCalculatedCalories) * 100).toFixed(1))
+      }
+    }
   }
 
   // 礦物質比率（當提供時）
