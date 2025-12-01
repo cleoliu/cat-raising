@@ -113,23 +113,9 @@ function DashboardContent() {
 
   const loadRecords = async (userId: string, catId?: string) => {
     try {
-      let query = supabase
-        .from('food_calculations')
-        .select(`
-          *,
-          food_calculation_cats (
-            cats (
-              id,
-              name,
-              avatar_id
-            )
-          )
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-
       // Filter by cat if specified - need to join through the association table
       if (catId && catId !== 'all') {
+        // 只獲取有特定貓咪關聯的記錄
         const { data: calculationIds, error: filterError } = await supabase
           .from('food_calculation_cats')
           .select('food_calculation_id')
@@ -146,17 +132,63 @@ function DashboardContent() {
           return
         }
 
-        query = query.in('id', ids)
+        const { data, error } = await supabase
+          .from('food_calculations')
+          .select(`
+            *,
+            food_calculation_cats (
+              cats (
+                id,
+                name,
+                avatar_id
+              )
+            )
+          `)
+          .eq('user_id', userId)
+          .in('id', ids)
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          console.error('Error loading filtered records:', error)
+          return
+        }
+
+        setRecords(data || [])
+      } else {
+        // 獲取所有記錄，但需要去重
+        const { data: allRecords, error } = await supabase
+          .from('food_calculations')
+          .select(`
+            *,
+            food_calculation_cats (
+              cats (
+                id,
+                name,
+                avatar_id
+              )
+            )
+          `)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          console.error('Error loading all records:', error)
+          return
+        }
+
+        // 去重：如果一筆記錄有貓咪關聯，就不要顯示"未指定貓咪"版本
+        const uniqueRecords: FoodRecord[] = []
+        const processedIds = new Set<string>()
+
+        for (const record of (allRecords || [])) {
+          if (!processedIds.has(record.id)) {
+            uniqueRecords.push(record)
+            processedIds.add(record.id)
+          }
+        }
+
+        setRecords(uniqueRecords)
       }
-
-      const { data, error } = await query
-
-      if (error) {
-        console.error('Error loading records:', error)
-        return
-      }
-
-      setRecords(data || [])
     } catch (error) {
       console.error('Error loading records:', error)
     }
