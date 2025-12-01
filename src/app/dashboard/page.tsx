@@ -904,13 +904,13 @@ function DashboardContent() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
                   <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
                     record.dm_protein >= 35
-                      ? 'from-success/10 to-success/20 border-success/30 hover:shadow-success/20'
+                      ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
                       : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
                   }`}>
-                    <div className={`text-xs font-medium ${record.dm_protein >= 35 ? 'text-success' : 'text-red-600'}`}>
+                    <div className={`text-xs font-medium ${record.dm_protein >= 35 ? 'text-green-600' : 'text-red-600'}`}>
                       蛋白質乾物比 (≥35%)
                     </div>
-                    <div className={`text-sm font-bold ${record.dm_protein >= 35 ? 'text-success' : 'text-red-600'}`}>
+                    <div className={`text-sm font-bold ${record.dm_protein >= 35 ? 'text-green-600' : 'text-red-600'}`}>
                       {record.dm_protein}%
                     </div>
                   </div>

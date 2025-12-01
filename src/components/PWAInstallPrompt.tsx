@@ -20,13 +20,19 @@ export default function PWAInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false)
 
   useEffect(() => {
+    // 檢查瀏覽器環境
+    if (typeof window === 'undefined') return
+
     // 檢查是否為iOS設備
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    setIsIOS(isIOSDevice)
-
+    
     // 檢查是否已安裝
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    const isInWebApp = 'standalone' in window.navigator && Boolean((window.navigator as any).standalone)
+    const webAppNavigator = window.navigator as Navigator & { standalone?: boolean }
+    const isInWebApp = 'standalone' in webAppNavigator && Boolean(webAppNavigator.standalone)
+    
+    // 批次更新狀態
+    setIsIOS(isIOSDevice)
     setIsInstalled(isStandalone || isInWebApp)
 
     // 監聽beforeinstallprompt事件

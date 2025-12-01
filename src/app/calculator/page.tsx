@@ -636,15 +636,15 @@ export default function CalculatorPage() {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
                           result.dm_protein >= 35 
-                            ? 'from-success/10 to-success/20 border-success/30 hover:shadow-success/20'
+                            ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
                             : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
                         }`}>
                           <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
-                            result.dm_protein >= 35 ? 'text-success' : 'text-red-600'
+                            result.dm_protein >= 35 ? 'text-green-600' : 'text-red-600'
                           }`}>
                             蛋白質乾物比 (≥35%)
                           </div>
-                          <div className={`text-xl font-bold ${result.dm_protein >= 35 ? 'text-success' : 'text-red-600'}`}>
+                          <div className={`text-xl font-bold ${result.dm_protein >= 35 ? 'text-green-600' : 'text-red-600'}`}>
                             {result.dm_protein}%
                           </div>
                           <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
