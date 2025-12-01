@@ -27,6 +27,9 @@ interface FoodRecord {
   id: string
   brand_name: string
   product_name: string
+  food_weight: number
+  total_calories: number | null
+  calories_per_100g: number | null
   protein_percent: number
   fat_percent: number
   fiber_percent: number
@@ -38,7 +41,6 @@ interface FoodRecord {
   sodium_percent: number | null
   target_age: string | null
   food_type: string | null
-  calories: number | null
   dry_matter_content: number
   dm_protein: number
   dm_fat: number
@@ -70,6 +72,9 @@ function DashboardContent() {
   const [formData, setFormData] = useState({
     brand_name: '',
     product_name: '',
+    food_weight: '',
+    total_calories: '',
+    calories_per_100g: '',
     protein_percent: '',
     fat_percent: '',
     fiber_percent: '',
@@ -210,6 +215,9 @@ function DashboardContent() {
     setFormData({
       brand_name: record.brand_name,
       product_name: record.product_name,
+      food_weight: record.food_weight.toString(),
+      total_calories: record.total_calories?.toString() || '',
+      calories_per_100g: record.calories_per_100g?.toString() || '',
       protein_percent: record.protein_percent.toString(),
       fat_percent: record.fat_percent.toString(),
       fiber_percent: record.fiber_percent.toString(),
@@ -276,6 +284,9 @@ function DashboardContent() {
       const updatedData = {
         brand_name: formData.brand_name,
         product_name: formData.product_name,
+        food_weight: parseFloat(formData.food_weight),
+        total_calories: formData.total_calories ? parseFloat(formData.total_calories) : null,
+        calories_per_100g: formData.calories_per_100g ? parseFloat(formData.calories_per_100g) : null,
         protein_percent: protein,
         fat_percent: fat,
         fiber_percent: fiber,
@@ -356,6 +367,9 @@ function DashboardContent() {
       setFormData({
         brand_name: '',
         product_name: '',
+        food_weight: '',
+        total_calories: '',
+        calories_per_100g: '',
         protein_percent: '',
         fat_percent: '',
         fiber_percent: '',
@@ -383,6 +397,9 @@ function DashboardContent() {
     setFormData({
       brand_name: '',
       product_name: '',
+      food_weight: '',
+      total_calories: '',
+      calories_per_100g: '',
       protein_percent: '',
       fat_percent: '',
       fiber_percent: '',
@@ -536,6 +553,53 @@ function DashboardContent() {
                       required
                       className="glass border-primary/30 focus:border-primary focus:ring-primary"
                     />
+                  </div>
+                </div>
+
+                {/* 重量與熱量 */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">重量與熱量</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_food_weight">食物重量 (g) *</Label>
+                      <Input
+                        id="edit_food_weight"
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        placeholder="例如：100"
+                        value={formData.food_weight}
+                        onChange={(e) => setFormData({ ...formData, food_weight: e.target.value })}
+                        required
+                        className="glass border-primary/30 focus:border-primary focus:ring-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_total_calories">整體熱量 (kcal)</Label>
+                      <Input
+                        id="edit_total_calories"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        placeholder="可選"
+                        value={formData.total_calories}
+                        onChange={(e) => setFormData({ ...formData, total_calories: e.target.value })}
+                        className="glass border-primary/30 focus:border-primary focus:ring-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_calories_per_100g">單位熱量 (kcal/100g)</Label>
+                      <Input
+                        id="edit_calories_per_100g"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        placeholder="可選"
+                        value={formData.calories_per_100g}
+                        onChange={(e) => setFormData({ ...formData, calories_per_100g: e.target.value })}
+                        className="glass border-primary/30 focus:border-primary focus:ring-primary"
+                      />
+                    </div>
                   </div>
                 </div>
 
