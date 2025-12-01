@@ -276,6 +276,13 @@ export default function CalculatorPage() {
           // Try to create associations directly - let the error handling determine if table exists
           const associationPromises = selectedCatIds.map(async (catId) => {
             console.log(`[${saveId}] Inserting association: food_calculation_id=${foodCalculation.id}, cat_id=${catId}`)
+            console.log(`[${saveId}] Environment check:`, {
+              isDev: process.env.NODE_ENV === 'development',
+              supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+              hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+              userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'N/A'
+            })
+            
             const result = await supabase
               .from('food_calculation_cats')
               .insert({
@@ -284,7 +291,14 @@ export default function CalculatorPage() {
               })
             
             if (result.error) {
-              console.error(`[${saveId}] Association insert failed for cat ${catId}:`, result.error)
+              console.error(`[${saveId}] Association insert failed for cat ${catId}:`, {
+                error: result.error,
+                errorCode: result.error.code,
+                errorMessage: result.error.message,
+                errorDetails: result.error.details,
+                errorHint: result.error.hint,
+                insertData: { food_calculation_id: foodCalculation.id, cat_id: catId }
+              })
             } else {
               console.log(`[${saveId}] Association insert successful for cat ${catId}:`, result.data)
             }
