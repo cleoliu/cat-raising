@@ -23,7 +23,7 @@ export default function CalculatorPage() {
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
   const lastSaveTime = useRef(0)
-  const saveInProgressRef = useRef(false) // 額外的全局鎖
+  const saveInProgressRef = useRef<boolean>(false) // 額外的全局鎖
   const savePromiseRef = useRef<Promise<void> | null>(null) // 保存 Promise 引用
   
   // Form data - changed to support multiple cats
