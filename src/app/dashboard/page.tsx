@@ -1150,18 +1150,6 @@ function DashboardContent() {
                       {record.calcium_phosphorus_ratio ? `${record.calcium_phosphorus_ratio.toFixed(2)}:1` : '未提供'}
                     </div>
                   </div>
-                  <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
-                    record.moisture_percent >= 63
-                      ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
-                      : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
-                  }`}>
-                    <div className={`text-xs font-medium ${record.moisture_percent >= 63 ? 'text-green-600' : 'text-red-600'}`}>
-                      水分含量 (≥63%)
-                    </div>
-                    <div className={`text-sm font-bold ${record.moisture_percent >= 63 ? 'text-green-600' : 'text-red-600'}`}>
-                      {record.moisture_percent}%
-                    </div>
-                  </div>
                 </div>
 
                 {/* Separator between dry matter indicators and calorie ratios */}

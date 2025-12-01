@@ -203,78 +203,101 @@ export default function CalculatorPage() {
     console.log('Save ID:', saveId)
 
     try {
-      console.log(`[${saveId}] Creating food calculation record...`)
-      // First, create the food calculation record without cat_id
-      const { data: foodCalculation, error: calculationError } = await supabase
-        .from('food_calculations')
-        .insert({
-          user_id: user.id,
-          cat_id: null, // We'll handle cat associations separately
-          brand_name: formData.brand_name,
-          product_name: formData.product_name,
-          food_weight: formData.food_weight,
-          total_calories: formData.total_calories || null,
-          calories_per_100g: formData.calories_per_100g || null,
-          protein_percent: formData.protein_percent,
-          fat_percent: formData.fat_percent,
-          fiber_percent: formData.fiber_percent,
-          ash_percent: formData.ash_percent,
-          moisture_percent: formData.moisture_percent,
-          carbohydrate_percent: formData.carbohydrate_percent || null,
-          calcium_percent: formData.calcium_percent || null,
-          phosphorus_percent: formData.phosphorus_percent || null,
-          sodium_percent: formData.sodium_percent || null,
-          target_age: formData.target_age || null,
-          food_type: formData.food_type || null,
-          dry_matter_content: result.dry_matter_content,
-          dm_protein: result.dm_protein,
-          dm_fat: result.dm_fat,
-          dm_fiber: result.dm_fiber,
-          dm_ash: result.dm_ash,
-          calorie_density: result.calorie_density || null,
-          protein_calorie_ratio: result.protein_calorie_ratio || null,
-          fat_calorie_ratio: result.fat_calorie_ratio || null,
-          carbohydrate_calorie_ratio: result.carbohydrate_calorie_ratio || null,
-          calcium_phosphorus_ratio: result.calcium_phosphorus_ratio || null,
-          favorited: false
-        })
-        .select()
-        .single()
-
-      if (calculationError) {
-        console.log(`[${saveId}] Food calculation creation failed:`, calculationError)
-        alert('保存失敗：' + calculationError.message)
-        return
-      }
-      
-      console.log(`[${saveId}] Food calculation created successfully:`, foodCalculation.id)
-
-      // If cats are selected, create associations in the junction table
       if (selectedCatIds.length > 0) {
-        console.log(`[${saveId}] Saving cat associations:`, selectedCatIds, 'for calculation:', foodCalculation.id)
+        // 如果有選擇貓咪，為每隻貓咪創建一筆記錄
+        console.log(`[${saveId}] Creating food calculation records for cats:`, selectedCatIds)
         
-        const catAssociations = selectedCatIds.map(catId => ({
-          food_calculation_id: foodCalculation.id,
-          cat_id: catId
-        }))
+        for (const catId of selectedCatIds) {
+          const { data: foodCalculation, error: calculationError } = await supabase
+            .from('food_calculations')
+            .insert({
+              user_id: user.id,
+              cat_id: catId, // 直接設置貓咪ID
+              brand_name: formData.brand_name,
+              product_name: formData.product_name,
+              food_weight: formData.food_weight,
+              total_calories: formData.total_calories || null,
+              calories_per_100g: formData.calories_per_100g || null,
+              protein_percent: formData.protein_percent,
+              fat_percent: formData.fat_percent,
+              fiber_percent: formData.fiber_percent,
+              ash_percent: formData.ash_percent,
+              moisture_percent: formData.moisture_percent,
+              carbohydrate_percent: formData.carbohydrate_percent || null,
+              calcium_percent: formData.calcium_percent || null,
+              phosphorus_percent: formData.phosphorus_percent || null,
+              sodium_percent: formData.sodium_percent || null,
+              target_age: formData.target_age || null,
+              food_type: formData.food_type || null,
+              dry_matter_content: result.dry_matter_content,
+              dm_protein: result.dm_protein,
+              dm_fat: result.dm_fat,
+              dm_fiber: result.dm_fiber,
+              dm_ash: result.dm_ash,
+              calorie_density: result.calorie_density || null,
+              protein_calorie_ratio: result.protein_calorie_ratio || null,
+              fat_calorie_ratio: result.fat_calorie_ratio || null,
+              carbohydrate_calorie_ratio: result.carbohydrate_calorie_ratio || null,
+              calcium_phosphorus_ratio: result.calcium_phosphorus_ratio || null,
+              favorited: false
+            })
+            .select()
+            .single()
 
-        // Use upsert to handle potential duplicates
-        const { data: insertedData, error: associationError } = await supabase
-          .from('food_calculation_cats')
-          .upsert(catAssociations, {
-            onConflict: 'food_calculation_id,cat_id'
-          })
-          .select()
-
-        if (associationError) {
-          // If association fails, we could either delete the calculation or continue
-          console.error(`[${saveId}] Cat association error:`, associationError)
-          alert('記錄已保存，但貓咪關聯失敗：' + associationError.message)
-        } else {
-          console.log(`[${saveId}] Cat associations saved successfully:`, insertedData)
+          if (calculationError) {
+            console.log(`[${saveId}] Food calculation creation failed for cat ${catId}:`, calculationError)
+            alert('保存失敗：' + calculationError.message)
+            return
+          }
+          
+          console.log(`[${saveId}] Food calculation created successfully for cat ${catId}:`, foodCalculation.id)
         }
       } else {
-        console.log(`[${saveId}] No cats selected for association`)
+        // 沒有選擇貓咪時，創建一筆沒有關聯貓咪的記錄
+        console.log(`[${saveId}] Creating food calculation record without cat association`)
+        const { data: foodCalculation, error: calculationError } = await supabase
+          .from('food_calculations')
+          .insert({
+            user_id: user.id,
+            cat_id: null,
+            brand_name: formData.brand_name,
+            product_name: formData.product_name,
+            food_weight: formData.food_weight,
+            total_calories: formData.total_calories || null,
+            calories_per_100g: formData.calories_per_100g || null,
+            protein_percent: formData.protein_percent,
+            fat_percent: formData.fat_percent,
+            fiber_percent: formData.fiber_percent,
+            ash_percent: formData.ash_percent,
+            moisture_percent: formData.moisture_percent,
+            carbohydrate_percent: formData.carbohydrate_percent || null,
+            calcium_percent: formData.calcium_percent || null,
+            phosphorus_percent: formData.phosphorus_percent || null,
+            sodium_percent: formData.sodium_percent || null,
+            target_age: formData.target_age || null,
+            food_type: formData.food_type || null,
+            dry_matter_content: result.dry_matter_content,
+            dm_protein: result.dm_protein,
+            dm_fat: result.dm_fat,
+            dm_fiber: result.dm_fiber,
+            dm_ash: result.dm_ash,
+            calorie_density: result.calorie_density || null,
+            protein_calorie_ratio: result.protein_calorie_ratio || null,
+            fat_calorie_ratio: result.fat_calorie_ratio || null,
+            carbohydrate_calorie_ratio: result.carbohydrate_calorie_ratio || null,
+            calcium_phosphorus_ratio: result.calcium_phosphorus_ratio || null,
+            favorited: false
+          })
+          .select()
+          .single()
+
+        if (calculationError) {
+          console.log(`[${saveId}] Food calculation creation failed:`, calculationError)
+          alert('保存失敗：' + calculationError.message)
+          return
+        }
+        
+        console.log(`[${saveId}] Food calculation created successfully:`, foodCalculation.id)
       }
 
       console.log(`[${saveId}] Save process completed successfully`)
@@ -814,23 +837,6 @@ export default function CalculatorPage() {
                             })()
                           }`}>
                             {result.calcium_phosphorus_ratio ? `${result.calcium_phosphorus_ratio.toFixed(2)}:1` : '未提供'}
-                          </div>
-                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
-                        </div>
-                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
-                          formData.moisture_percent >= 63
-                            ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
-                            : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
-                        }`} style={{animationDelay: '0.6s'}}>
-                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
-                            formData.moisture_percent >= 63 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            水分含量 (≥63%)
-                          </div>
-                          <div className={`text-xl font-bold ${
-                            formData.moisture_percent >= 63 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {formData.moisture_percent}%
                           </div>
                           <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
                         </div>
