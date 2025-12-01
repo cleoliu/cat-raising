@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Rocket, Calculator, Cat, CheckCircle } from 'lucide-react'
+import { Rocket, Calculator, Cat, CheckCircle, Heart, Bell, DollarSign, Package, FileText, BarChart3 } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -63,29 +63,65 @@ export default function Home() {
       <section className="relative px-4 py-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <h2 className="mb-4 text-center text-4xl font-bold tracking-tight text-foreground sm:text-5xl animate-slide-up">
-            三大核心功能
+            全方位貓咪生活管理
           </h2>
           <p className="mb-16 text-center text-muted-foreground text-lg animate-slide-up" style={{animationDelay: '0.1s'}}>
-            強大功能，守護愛貓健康
+            從營養到健康，從記帳到提醒，全面呵護您的貓咪
           </p>
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <FeatureCard
               icon={<Calculator className="h-10 w-10 text-primary" />}
-              title="精準計算"
-              description="基於 AAFCO 標準的科學計算公式，確保營養數據的準確性。"
+              title="營養分析"
+              description="基於 AAFCO 標準的科學計算，精準分析貓糧營養成分與乾物質含量。"
               delay="0s"
             />
             <FeatureCard
-              icon={<CheckCircle className="h-10 w-10 text-success" />}
-              title="智能記錄"
-              description="自動保存歷史記錄，方便追蹤與比較不同貓糧的營養成分。"
+              icon={<Heart className="h-10 w-10 text-rose-500" />}
+              title="健康記錄"
+              description="完整的醫療保健記錄，追蹤疫苗、體檢、用藥等重要健康資訊。"
+              delay="0.1s"
+            />
+            <FeatureCard
+              icon={<FileText className="h-10 w-10 text-blue-500" />}
+              title="飲食日記"
+              description="詳細記錄每日飲食攝取，包含餵食時間、份量與貓咪反應。"
               delay="0.2s"
+            />
+            <FeatureCard
+              icon={<Bell className="h-10 w-10 text-orange-500" />}
+              title="智能提醒"
+              description="餵食、用藥、清潔、體檢等重要任務提醒，不再錯過照護時間。"
+              delay="0.3s"
+            />
+            <FeatureCard
+              icon={<DollarSign className="h-10 w-10 text-green-500" />}
+              title="支出管理"
+              description="詳細記錄貓咪相關花費，包含飼料、醫療、用品等開支統計。"
+              delay="0.4s"
+            />
+            <FeatureCard
+              icon={<Package className="h-10 w-10 text-purple-500" />}
+              title="庫存追蹤"
+              description="管理貓糧、貓砂、玩具等消耗品庫存，提前預警補貨時間。"
+              delay="0.5s"
             />
             <FeatureCard
               icon={<Cat className="h-10 w-10 text-secondary" />}
               title="多貓管理"
-              description="為家中每位主子建立專屬檔案，個別化管理飲食健康。"
-              delay="0.4s"
+              description="為家中每位主子建立專屬檔案，個別化管理所有生活記錄。"
+              delay="0.6s"
+            />
+            <FeatureCard
+              icon={<BarChart3 className="h-10 w-10 text-indigo-500" />}
+              title="數據分析"
+              description="每月自動生成詳細報表，分析健康趨勢、支出統計與照護品質。"
+              delay="0.7s"
+            />
+            <FeatureCard
+              icon={<CheckCircle className="h-10 w-10 text-success" />}
+              title="雲端同步"
+              description="所有資料雲端備份，多裝置同步，隨時隨地存取貓咪資訊。"
+              delay="0.8s"
             />
           </div>
         </div>

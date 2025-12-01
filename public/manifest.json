@@ -1,0 +1,127 @@
+{
+  "name": "Cat-Raising - 全方位貓咪生活管理平台",
+  "short_name": "Cat-Raising",
+  "description": "一站式貓咪生活管理：營養分析、健康記錄、智能提醒、支出管理、庫存追蹤",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "zh-TW",
+  "categories": ["lifestyle", "health", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "營養計算",
+      "short_name": "營養",
+      "description": "貓糧營養成分分析計算",
+      "url": "/calculator",
+      "icons": [
+        {
+          "src": "/icons/calculator-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "健康記錄",
+      "short_name": "健康",
+      "description": "醫療保健與日常記錄",
+      "url": "/health",
+      "icons": [
+        {
+          "src": "/icons/health-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "支出管理",
+      "short_name": "記帳",
+      "description": "貓咪相關花費記錄管理",
+      "url": "/expenses",
+      "icons": [
+        {
+          "src": "/icons/money-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "提醒任務",
+      "short_name": "提醒",
+      "description": "餵食、醫療、清潔等提醒",
+      "url": "/reminders",
+      "icons": [
+        {
+          "src": "/icons/reminder-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/mobile-dashboard.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshots/mobile-calculator.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}
