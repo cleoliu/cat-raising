@@ -322,20 +322,9 @@ export default function CalculatorPage() {
             )
             
             if (tableNotExistErrors.length > 0) {
-              console.warn(`[${saveId}] Association table doesn't exist, updating food calculation with first cat`)
-              alert('警告：多貓關聯功能需要執行數據庫遷移。目前只保存第一隻選中的貓咪。\n請執行 migration/complete-migration-for-multiple-cats.sql')
-              
-              // Fallback: update the food calculation with the first selected cat
-              const { error: updateError } = await supabase
-                .from('food_calculations')
-                .update({ cat_id: selectedCatIds[0] })
-                .eq('id', foodCalculation.id)
-                
-              if (updateError) {
-                console.error(`[${saveId}] Fallback cat_id update failed:`, updateError)
-              } else {
-                console.log(`[${saveId}] Fallback: Updated cat_id to ${selectedCatIds[0]}`)
-              }
+              console.error(`[${saveId}] Association table doesn't exist - migration required`)
+              alert('錯誤：多貓關聯功能需要執行數據庫遷移。\n請執行 migration/complete-migration-for-multiple-cats.sql')
+              return
             } else {
               // Other types of errors
               failedAssociations.forEach(failed => {

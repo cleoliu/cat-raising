@@ -385,7 +385,9 @@ function DashboardContent() {
 
         const { error: insertError } = await supabase
           .from('food_calculation_cats')
-          .insert(associations)
+          .upsert(associations, {
+            onConflict: 'food_calculation_id,cat_id'
+          })
 
         if (insertError) {
           console.error('Error creating new associations:', insertError)
