@@ -203,101 +203,80 @@ export default function CalculatorPage() {
     console.log('Save ID:', saveId)
 
     try {
-      if (selectedCatIds.length > 0) {
-        // 如果有選擇貓咪，為每隻貓咪創建一筆記錄
-        console.log(`[${saveId}] Creating food calculation records for cats:`, selectedCatIds)
-        
-        for (const catId of selectedCatIds) {
-          const { data: foodCalculation, error: calculationError } = await supabase
-            .from('food_calculations')
-            .insert({
-              user_id: user.id,
-              cat_id: catId, // 直接設置貓咪ID
-              brand_name: formData.brand_name,
-              product_name: formData.product_name,
-              food_weight: formData.food_weight,
-              total_calories: formData.total_calories || null,
-              calories_per_100g: formData.calories_per_100g || null,
-              protein_percent: formData.protein_percent,
-              fat_percent: formData.fat_percent,
-              fiber_percent: formData.fiber_percent,
-              ash_percent: formData.ash_percent,
-              moisture_percent: formData.moisture_percent,
-              carbohydrate_percent: formData.carbohydrate_percent || null,
-              calcium_percent: formData.calcium_percent || null,
-              phosphorus_percent: formData.phosphorus_percent || null,
-              sodium_percent: formData.sodium_percent || null,
-              target_age: formData.target_age || null,
-              food_type: formData.food_type || null,
-              dry_matter_content: result.dry_matter_content,
-              dm_protein: result.dm_protein,
-              dm_fat: result.dm_fat,
-              dm_fiber: result.dm_fiber,
-              dm_ash: result.dm_ash,
-              calorie_density: result.calorie_density || null,
-              protein_calorie_ratio: result.protein_calorie_ratio || null,
-              fat_calorie_ratio: result.fat_calorie_ratio || null,
-              carbohydrate_calorie_ratio: result.carbohydrate_calorie_ratio || null,
-              calcium_phosphorus_ratio: result.calcium_phosphorus_ratio || null,
-              favorited: false
-            })
-            .select()
-            .single()
+      console.log(`[${saveId}] Creating single food calculation record...`)
+      // 只創建一筆記錄，不設置 cat_id
+      const { data: foodCalculation, error: calculationError } = await supabase
+        .from('food_calculations')
+        .insert({
+          user_id: user.id,
+          cat_id: null, // 使用關聯表來處理貓咪關聯
+          brand_name: formData.brand_name,
+          product_name: formData.product_name,
+          food_weight: formData.food_weight,
+          total_calories: formData.total_calories || null,
+          calories_per_100g: formData.calories_per_100g || null,
+          protein_percent: formData.protein_percent,
+          fat_percent: formData.fat_percent,
+          fiber_percent: formData.fiber_percent,
+          ash_percent: formData.ash_percent,
+          moisture_percent: formData.moisture_percent,
+          carbohydrate_percent: formData.carbohydrate_percent || null,
+          calcium_percent: formData.calcium_percent || null,
+          phosphorus_percent: formData.phosphorus_percent || null,
+          sodium_percent: formData.sodium_percent || null,
+          target_age: formData.target_age || null,
+          food_type: formData.food_type || null,
+          dry_matter_content: result.dry_matter_content,
+          dm_protein: result.dm_protein,
+          dm_fat: result.dm_fat,
+          dm_fiber: result.dm_fiber,
+          dm_ash: result.dm_ash,
+          calorie_density: result.calorie_density || null,
+          protein_calorie_ratio: result.protein_calorie_ratio || null,
+          fat_calorie_ratio: result.fat_calorie_ratio || null,
+          carbohydrate_calorie_ratio: result.carbohydrate_calorie_ratio || null,
+          calcium_phosphorus_ratio: result.calcium_phosphorus_ratio || null,
+          favorited: false
+        })
+        .select()
+        .single()
 
-          if (calculationError) {
-            console.log(`[${saveId}] Food calculation creation failed for cat ${catId}:`, calculationError)
-            alert('保存失敗：' + calculationError.message)
-            return
-          }
+      if (calculationError) {
+        console.log(`[${saveId}] Food calculation creation failed:`, calculationError)
+        alert('保存失敗：' + calculationError.message)
+        return
+      }
+      
+      console.log(`[${saveId}] Food calculation created successfully:`, foodCalculation.id)
+
+      // 如果有選擇貓咪，建立關聯
+      if (selectedCatIds.length > 0) {
+        console.log(`[${saveId}] Creating cat associations:`, selectedCatIds, 'for calculation:', foodCalculation.id)
+        
+        const catAssociations = selectedCatIds.map(catId => ({
+          food_calculation_id: foodCalculation.id,
+          cat_id: catId
+        }))
+
+        const { error: associationError } = await supabase
+          .from('food_calculation_cats')
+          .insert(catAssociations)
+
+        if (associationError) {
+          console.error(`[${saveId}] Cat association error:`, associationError)
+          // 如果關聯失敗，刪除已創建的計算記錄
+          await supabase
+            .from('food_calculations')
+            .delete()
+            .eq('id', foodCalculation.id)
           
-          console.log(`[${saveId}] Food calculation created successfully for cat ${catId}:`, foodCalculation.id)
+          alert('保存失敗：貓咪關聯錯誤 - ' + associationError.message)
+          return
+        } else {
+          console.log(`[${saveId}] Cat associations created successfully`)
         }
       } else {
-        // 沒有選擇貓咪時，創建一筆沒有關聯貓咪的記錄
-        console.log(`[${saveId}] Creating food calculation record without cat association`)
-        const { data: foodCalculation, error: calculationError } = await supabase
-          .from('food_calculations')
-          .insert({
-            user_id: user.id,
-            cat_id: null,
-            brand_name: formData.brand_name,
-            product_name: formData.product_name,
-            food_weight: formData.food_weight,
-            total_calories: formData.total_calories || null,
-            calories_per_100g: formData.calories_per_100g || null,
-            protein_percent: formData.protein_percent,
-            fat_percent: formData.fat_percent,
-            fiber_percent: formData.fiber_percent,
-            ash_percent: formData.ash_percent,
-            moisture_percent: formData.moisture_percent,
-            carbohydrate_percent: formData.carbohydrate_percent || null,
-            calcium_percent: formData.calcium_percent || null,
-            phosphorus_percent: formData.phosphorus_percent || null,
-            sodium_percent: formData.sodium_percent || null,
-            target_age: formData.target_age || null,
-            food_type: formData.food_type || null,
-            dry_matter_content: result.dry_matter_content,
-            dm_protein: result.dm_protein,
-            dm_fat: result.dm_fat,
-            dm_fiber: result.dm_fiber,
-            dm_ash: result.dm_ash,
-            calorie_density: result.calorie_density || null,
-            protein_calorie_ratio: result.protein_calorie_ratio || null,
-            fat_calorie_ratio: result.fat_calorie_ratio || null,
-            carbohydrate_calorie_ratio: result.carbohydrate_calorie_ratio || null,
-            calcium_phosphorus_ratio: result.calcium_phosphorus_ratio || null,
-            favorited: false
-          })
-          .select()
-          .single()
-
-        if (calculationError) {
-          console.log(`[${saveId}] Food calculation creation failed:`, calculationError)
-          alert('保存失敗：' + calculationError.message)
-          return
-        }
-        
-        console.log(`[${saveId}] Food calculation created successfully:`, foodCalculation.id)
+        console.log(`[${saveId}] No cats selected for association`)
       }
 
       console.log(`[${saveId}] Save process completed successfully`)
@@ -913,35 +892,7 @@ export default function CalculatorPage() {
                     {/* Save Button */}
                     <div className="pt-6 border-t border-gray-200">
                       <button 
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          console.log('Save button clicked', { 
-                            saving, 
-                            savingRefCurrent: savingRef.current, 
-                            timestamp: Date.now() 
-                          })
-                          
-                          // 多重檢查防止重複點擊
-                          if (saving || savingRef.current || saveInProgressRef.current) {
-                            console.log('Save prevented - already in progress')
-                            return
-                          }
-                          
-                          if (!user || !result) {
-                            console.log('Save prevented - missing user or result')
-                            return
-                          }
-                          
-                          const now = Date.now()
-                          if (now - lastSaveTime.current < 5000) {
-                            console.log('Save prevented - too soon after last save')
-                            return
-                          }
-                          
-                          console.log('Proceeding with save...')
-                          handleSave()
-                        }}
+                        onClick={handleSave}
                         disabled={saving || savingRef.current || saveInProgressRef.current}
                         className={`
                           w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300
