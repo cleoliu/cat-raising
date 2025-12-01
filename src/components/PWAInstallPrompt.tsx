@@ -26,7 +26,7 @@ export default function PWAInstallPrompt() {
 
     // 檢查是否已安裝
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    const isInWebApp = 'standalone' in window.navigator && window.navigator.standalone
+    const isInWebApp = 'standalone' in window.navigator && Boolean((window.navigator as any).standalone)
     setIsInstalled(isStandalone || isInWebApp)
 
     // 監聽beforeinstallprompt事件
