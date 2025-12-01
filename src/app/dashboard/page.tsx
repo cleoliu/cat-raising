@@ -52,13 +52,12 @@ interface FoodRecord {
   calcium_phosphorus_ratio: number | null
   favorited: boolean
   created_at: string
-  food_calculation_cats?: {
-    cats: {
-      id: string
-      name: string
-      avatar_id?: string
-    }
-  }[]
+  cat_id: string | null
+  cats?: {
+    id: string
+    name: string
+    avatar_id?: string
+  } | null
 }
 
 function DashboardContent() {
@@ -87,7 +86,7 @@ function DashboardContent() {
     target_age: '',
     food_type: ''
   })
-  const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
+  const [selectedCatId, setSelectedCatId] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -155,39 +154,26 @@ function DashboardContent() {
 
         setRecords(data || [])
       } else {
-        // 獲取所有記錄，但需要去重
+        // 獲取所有記錄，包含貓咪資訊
         const { data: allRecords, error } = await supabase
           .from('food_calculations')
           .select(`
             *,
-            food_calculation_cats (
-              cats (
-                id,
-                name,
-                avatar_id
-              )
+            cats (
+              id,
+              name,
+              avatar_id
             )
           `)
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
 
         if (error) {
-          console.error('Error loading all records:', error)
+          console.error('Error loading records:', error)
           return
         }
 
-        // 去重：如果一筆記錄有貓咪關聯，就不要顯示"未指定貓咪"版本
-        const uniqueRecords: FoodRecord[] = []
-        const processedIds = new Set<string>()
-
-        for (const record of (allRecords || [])) {
-          if (!processedIds.has(record.id)) {
-            uniqueRecords.push(record)
-            processedIds.add(record.id)
-          }
-        }
-
-        setRecords(uniqueRecords)
+        setRecords(allRecords || [])
       }
     } catch (error) {
       console.error('Error loading records:', error)
@@ -262,9 +248,8 @@ function DashboardContent() {
       target_age: record.target_age || '',
       food_type: record.food_type || ''
     })
-    // Set currently associated cats
-    const currentCatIds = record.food_calculation_cats?.map(assoc => assoc.cats.id) || []
-    setSelectedCatIds(currentCatIds)
+    // Set currently associated cat
+    setSelectedCatId(record.cat_id || '')
     setShowEditForm(true)
   }
 
@@ -340,7 +325,8 @@ function DashboardContent() {
         carbohydrate_calorie_ratio: carbohydrateCalorieRatio,
         calcium_phosphorus_ratio: (formData.calcium_percent && formData.phosphorus_percent && parseFloat(formData.phosphorus_percent) > 0) 
           ? parseFloat((parseFloat(formData.calcium_percent) / parseFloat(formData.phosphorus_percent)).toFixed(2))
-          : null
+          : null,
+        cat_id: selectedCatId || null
       }
 
       const { error } = await supabase
@@ -354,39 +340,7 @@ function DashboardContent() {
         return
       }
 
-      // Update cat associations
-      // First, delete existing associations
-      const { error: deleteError } = await supabase
-        .from('food_calculation_cats')
-        .delete()
-        .eq('food_calculation_id', editingRecord.id)
-
-      if (deleteError) {
-        console.error('Error deleting old cat associations:', deleteError)
-        alert('更新貓咪關聯失敗：' + deleteError.message)
-        return
-      }
-
-      // Then, create new associations if any cats are selected
-      if (selectedCatIds.length > 0) {
-        const catAssociations = selectedCatIds.map(catId => ({
-          food_calculation_id: editingRecord.id,
-          cat_id: catId
-        }))
-
-        // Use upsert to handle potential duplicates
-        const { error: insertError } = await supabase
-          .from('food_calculation_cats')
-          .upsert(catAssociations, {
-            onConflict: 'food_calculation_id,cat_id'
-          })
-
-        if (insertError) {
-          console.error('Error creating new cat associations:', insertError)
-          alert('更新貓咪關聯失敗：' + insertError.message)
-          return
-        }
-      }
+      // Cat association is now handled directly via cat_id field
 
       // Reload records to get updated associations
       if (user) {
@@ -395,7 +349,7 @@ function DashboardContent() {
       
       setShowEditForm(false)
       setEditingRecord(null)
-      setSelectedCatIds([])
+      setSelectedCatId('')
       setFormData({
         brand_name: '',
         product_name: '',
@@ -425,7 +379,7 @@ function DashboardContent() {
   const handleCancelEdit = () => {
     setEditingRecord(null)
     setShowEditForm(false)
-    setSelectedCatIds([])
+    setSelectedCatId('')
     setFormData({
       brand_name: '',
       product_name: '',
@@ -824,35 +778,26 @@ function DashboardContent() {
                 {/* 貓咪選擇 */}
                 <div className="space-y-3">
                   <h3 className="text-lg font-medium">關聯貓咪 - 可選</h3>
-                  <div className="glass p-4 rounded-xl border border-primary/30 space-y-2 max-h-40 overflow-y-auto">
-                    {cats.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-2">尚未新增貓咪</p>
-                    ) : (
-                      cats.map((cat) => (
-                        <label key={cat.id} className="flex items-center gap-3 p-2 hover:bg-primary/5 rounded-lg cursor-pointer transition-all duration-200">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                            checked={selectedCatIds.includes(cat.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedCatIds(prev => [...prev, cat.id])
-                              } else {
-                                setSelectedCatIds(prev => prev.filter(id => id !== cat.id))
-                              }
-                            }}
-                          />
-                          <div className="flex items-center gap-2">
-                            <CatAvatar avatarId={cat.avatar_id} size="sm" />
-                            <span className="text-sm font-medium">{cat.name}</span>
-                            <span className="text-xs text-muted-foreground">({cat.age}歲, {cat.weight}kg)</span>
-                          </div>
-                        </label>
-                      ))
-                    )}
+                  <div className="glass p-4 rounded-xl border border-primary/30">
+                    <Select value={selectedCatId} onValueChange={setSelectedCatId}>
+                      <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
+                        <SelectValue placeholder="選擇一隻貓咪" />
+                      </SelectTrigger>
+                      <SelectContent className="glass backdrop-blur-lg border-primary/20">
+                        <SelectItem value="" className="hover:bg-primary/10">不指定貓咪</SelectItem>
+                        {cats.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id} className="hover:bg-primary/10">
+                            <div className="flex items-center gap-2">
+                              <CatAvatar avatarId={cat.avatar_id} size="sm" />
+                              <span>{cat.name} ({cat.age}歲, {cat.weight}kg)</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  {selectedCatIds.length > 0 && (
-                    <p className="text-sm text-primary">已選擇 {selectedCatIds.length} 隻貓咪</p>
+                  {selectedCatId && (
+                    <p className="text-sm text-primary">已選擇: {cats.find(c => c.id === selectedCatId)?.name}</p>
                   )}
                 </div>
 
@@ -989,13 +934,11 @@ function DashboardContent() {
                     
                     {/* 貓咪標籤 */}
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      {record.food_calculation_cats && record.food_calculation_cats.length > 0 ? (
-                        record.food_calculation_cats.map((association) => (
-                          <span key={association.cats.id} className="text-xs bg-gradient-to-r from-primary/20 to-accent/20 text-primary px-2 py-1 rounded-full border border-primary/30 flex items-center gap-1">
-                            <CatAvatar avatarId={association.cats.avatar_id} size="sm" />
-                            {association.cats.name}
-                          </span>
-                        ))
+                      {record.cats ? (
+                        <span className="text-xs bg-gradient-to-r from-primary/20 to-accent/20 text-primary px-2 py-1 rounded-full border border-primary/30 flex items-center gap-1">
+                          <CatAvatar avatarId={record.cats.avatar_id} size="sm" />
+                          {record.cats.name}
+                        </span>
                       ) : (
                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full border border-gray-300">
                           未指定貓咪

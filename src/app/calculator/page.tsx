@@ -27,7 +27,7 @@ export default function CalculatorPage() {
   const savePromiseRef = useRef<Promise<void> | null>(null) // 保存 Promise 引用
   
   // Form data
-  const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
+  const [selectedCatId, setSelectedCatId] = useState<string>('')
   const [formData, setFormData] = useState<FoodCalculationInput>({
     brand_name: '',
     product_name: '',
@@ -176,49 +176,44 @@ export default function CalculatorPage() {
   }
 
   const handleSave = async () => {
-    // 如果已經有保存操作在進行中，直接返回該 Promise
     if (savePromiseRef.current) {
       console.log('Save already in progress, waiting for existing save...')
       return savePromiseRef.current
     }
 
     const now = Date.now()
-    
-    // 增強防止重複提交：多重檢查
+
     if (!user || !result || saving || savingRef.current || saveInProgressRef.current || (now - lastSaveTime.current < 3000)) {
-      console.log('Duplicate save attempt prevented', { 
-        user: !!user, 
-        result: !!result, 
-        saving, 
+      console.log('Duplicate save attempt prevented', {
+        user: !!user,
+        result: !!result,
+        saving,
         savingRefCurrent: savingRef.current,
         saveInProgressRefCurrent: saveInProgressRef.current,
-        timeDiff: now - lastSaveTime.current 
+        timeDiff: now - lastSaveTime.current
       })
       return
     }
 
-    // 創建並設置 Promise
     const savePromise = (async () => {
       try {
-        // 立即設置所有防護狀態
         setSaving(true)
         savingRef.current = true
         saveInProgressRef.current = true
         lastSaveTime.current = now
-        
+
         console.log('Starting save process', { userId: user.id, timestamp: now })
-        
-        // 額外保護：創建唯一標識符來追蹤這次保存
+
         const saveId = `${user.id}-${now}-${Math.random().toString(36).substr(2, 9)}`
         console.log('Save ID:', saveId)
 
         console.log(`[${saveId}] Creating single food calculation record...`)
-        // 只創建一筆記錄，不設置 cat_id
+        
         const { data: foodCalculation, error: calculationError } = await supabase
           .from('food_calculations')
           .insert({
             user_id: user.id,
-            cat_id: null, // 使用關聯表來處理貓咪關聯
+            cat_id: selectedCatId || null,
             brand_name: formData.brand_name,
             product_name: formData.product_name,
             food_weight: formData.food_weight,
@@ -255,64 +250,25 @@ export default function CalculatorPage() {
           alert('保存失敗：' + calculationError.message)
           return
         }
-        
+
         console.log(`[${saveId}] Food calculation created successfully:`, foodCalculation.id)
-
-        // 如果有選擇貓咪，建立關聯
-        if (selectedCatIds.length > 0) {
-          console.log(`[${saveId}] Creating cat associations:`, selectedCatIds, 'for calculation:', foodCalculation.id)
-          
-          const catAssociations = selectedCatIds.map(catId => ({
-            food_calculation_id: foodCalculation.id,
-            cat_id: catId
-          }))
-
-          const { error: associationError } = await supabase
-            .from('food_calculation_cats')
-            .insert(catAssociations)
-
-          if (associationError) {
-            console.error(`[${saveId}] Cat association error:`, associationError)
-            // 如果關聯失敗，刪除已創建的計算記錄
-            await supabase
-              .from('food_calculations')
-              .delete()
-              .eq('id', foodCalculation.id)
-            
-            alert('保存失敗：貓咪關聯錯誤 - ' + associationError.message)
-            return
-          } else {
-            console.log(`[${saveId}] Cat associations created successfully`)
-          }
-        } else {
-          console.log(`[${saveId}] No cats selected for association`)
-        }
-
+        
         console.log(`[${saveId}] Save process completed successfully`)
         alert('計算記錄已保存！')
         
         // 跳轉到產品頁並強制刷新
         router.push('/dashboard?refresh=' + Date.now())
-
-      } catch (error: any) {
-        console.error(`Save error:`, error)
-        alert('保存失敗：' + error.message)
+      } catch (error) {
+        console.error('Unexpected error during save:', error)
       } finally {
-        console.log(`Cleaning up save state...`)
-        // 延遲重置狀態，確保不會立即再次觸發
-        setTimeout(() => {
-          console.log(`Save state reset complete`)
-          setSaving(false)
-          savingRef.current = false
-          saveInProgressRef.current = false
-          savePromiseRef.current = null // 清除 Promise 引用
-        }, 2000)
+        setSaving(false)
+        savingRef.current = false
+        saveInProgressRef.current = false
+        savePromiseRef.current = null
       }
     })()
 
-    // 設置 Promise 引用
     savePromiseRef.current = savePromise
-    
     return savePromise
   }
 
@@ -371,36 +327,27 @@ export default function CalculatorPage() {
                   
                   {/* Cat Selection */}
                   <div className="space-y-3">
-                    <Label>選擇貓咪（可選，可多選）</Label>
-                    <div className="glass p-4 rounded-xl border border-primary/30 space-y-2 max-h-40 overflow-y-auto">
-                      {cats.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-2">尚未新增貓咪</p>
-                      ) : (
-                        cats.map((cat) => (
-                          <label key={cat.id} className="flex items-center gap-3 p-2 hover:bg-primary/5 rounded-lg cursor-pointer transition-all duration-200">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                              checked={selectedCatIds.includes(cat.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedCatIds(prev => [...prev, cat.id])
-                                } else {
-                                  setSelectedCatIds(prev => prev.filter(id => id !== cat.id))
-                                }
-                              }}
-                            />
-                            <div className="flex items-center gap-2">
-                              <CatAvatar avatarId={cat.avatar_id} size="sm" />
-                              <span className="text-sm font-medium">{cat.name}</span>
-                              <span className="text-xs text-muted-foreground">({cat.age}歲, {cat.weight}kg)</span>
-                            </div>
-                          </label>
-                        ))
-                      )}
+                    <Label>選擇貓咪（可選）</Label>
+                    <div className="glass p-4 rounded-xl border border-primary/30">
+                      <Select value={selectedCatId} onValueChange={setSelectedCatId}>
+                        <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
+                          <SelectValue placeholder="選擇一隻貓咪" />
+                        </SelectTrigger>
+                        <SelectContent className="glass backdrop-blur-lg border-primary/20">
+                          <SelectItem value="" className="hover:bg-primary/10">不指定貓咪</SelectItem>
+                          {cats.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id} className="hover:bg-primary/10">
+                              <div className="flex items-center gap-2">
+                                <CatAvatar avatarId={cat.avatar_id} size="sm" />
+                                <span>{cat.name} ({cat.age}歲, {cat.weight}kg)</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                    {selectedCatIds.length > 0 && (
-                      <p className="text-sm text-primary">已選擇 {selectedCatIds.length} 隻貓咪</p>
+                    {selectedCatId && (
+                      <p className="text-sm text-primary">已選擇: {cats.find(c => c.id === selectedCatId)?.name}</p>
                     )}
                   </div>
 
