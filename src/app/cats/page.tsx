@@ -468,7 +468,11 @@ export default function CatsPage() {
                         e.stopPropagation()
                         handleEdit(cat)
                       }}
-                      className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-300 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-full"
+                      className="h-12 w-12 p-0 hover:scale-110 transition-transform duration-300 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-full touch-manipulation"
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation'
+                      }}
                       title="編輯貓咪"
                     >
                       <Edit2 className="h-4 w-4" />
@@ -481,7 +485,11 @@ export default function CatsPage() {
                         e.stopPropagation()
                         handleDelete(cat.id)
                       }}
-                      className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-300 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-full"
+                      className="h-12 w-12 p-0 hover:scale-110 transition-transform duration-300 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-full touch-manipulation"
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation'
+                      }}
                       title="刪除貓咪"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -500,7 +508,11 @@ export default function CatsPage() {
         <button 
           onClick={() => setShowAddForm(true)}
           disabled={showAddForm}
-          className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white w-14 h-14 rounded-full shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-110 animate-pulse-slow flex items-center justify-center group-hover:animate-none disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white w-16 h-16 rounded-full shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-110 animate-pulse-slow flex items-center justify-center group-hover:animate-none disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+          style={{
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation'
+          }}
         >
           <PawPrint className="h-6 w-6" />
         </button>

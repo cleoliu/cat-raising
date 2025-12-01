@@ -827,16 +827,25 @@ function DashboardContent() {
                 </form>
                 
                 {/* 按鈕區域獨立 */}
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg relative">
-                  <div className="flex flex-col gap-3">
+                <div className="mt-6 p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl">
+                  <div className="flex flex-col gap-4">
                     <button 
                       type="button"
                       disabled={submitting}
-                      className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white py-4 px-6 rounded-lg text-lg font-medium disabled:opacity-50"
+                      className={`
+                        w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300
+                        ${
+                          submitting
+                            ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                            : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-95 shadow-lg hover:shadow-xl'
+                        }
+                        text-white transform hover:scale-105
+                        focus:outline-none focus:ring-4 focus:ring-blue-200
+                        touch-manipulation
+                      `}
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
-                        console.log('Dashboard submit clicked')
                         if (!submitting) {
                           const form = document.querySelector('form')
                           if (form) {
@@ -845,34 +854,35 @@ function DashboardContent() {
                           }
                         }
                       }}
-                      onTouchStart={() => console.log('Dashboard submit touch start')}
                       style={{ 
-                        minHeight: '50px',
-                        zIndex: 10,
-                        pointerEvents: 'auto',
-                        touchAction: 'manipulation',
-                        WebkitTapHighlightColor: 'rgba(59,130,246,0.2)'
+                        minHeight: '56px',
+                        WebkitTapHighlightColor: 'transparent'
                       }}
                     >
-                      {submitting ? '更新中...' : '更新記錄'}
+                      {submitting ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                          更新中...
+                        </span>
+                      ) : (
+                        '更新記錄'
+                      )}
                     </button>
                     
                     <button 
                       type="button"
-                      className="w-full bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 py-4 px-6 rounded-lg text-lg font-medium"
+                      disabled={submitting}
+                      className="w-full py-4 px-6 rounded-2xl font-bold text-lg bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 text-gray-800 transform hover:scale-105 active:scale-95 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-gray-200 touch-manipulation disabled:opacity-60"
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
-                        console.log('Dashboard cancel clicked')
-                        handleCancelEdit()
+                        if (!submitting) {
+                          handleCancelEdit()
+                        }
                       }}
-                      onTouchStart={() => console.log('Dashboard cancel touch start')}
                       style={{ 
-                        minHeight: '50px',
-                        zIndex: 10,
-                        pointerEvents: 'auto',
-                        touchAction: 'manipulation',
-                        WebkitTapHighlightColor: 'rgba(156,163,175,0.2)'
+                        minHeight: '56px',
+                        WebkitTapHighlightColor: 'transparent'
                       }}
                     >
                       取消
@@ -975,8 +985,12 @@ function DashboardContent() {
                         e.stopPropagation()
                         toggleFavorite(record.id, record.favorited)
                       }}
-                      className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-300 text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-full flex items-center justify-center"
+                      className="h-12 w-12 p-0 hover:scale-110 transition-transform duration-300 text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-full flex items-center justify-center touch-manipulation"
                       title="切換收藏"
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation'
+                      }}
                     >
                       {record.favorited ? '⭐' : '☆'}
                     </button>
@@ -987,8 +1001,12 @@ function DashboardContent() {
                         e.stopPropagation()
                         handleEditRecord(record)
                       }}
-                      className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-300 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-full flex items-center justify-center"
+                      className="h-12 w-12 p-0 hover:scale-110 transition-transform duration-300 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-full flex items-center justify-center touch-manipulation"
                       title="編輯記錄"
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation'
+                      }}
                     >
                       <Edit2 className="h-4 w-4" />
                     </button>
@@ -999,7 +1017,11 @@ function DashboardContent() {
                         e.stopPropagation()
                         deleteRecord(record.id, `${record.brand_name} - ${record.product_name}`)
                       }}
-                      className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-300 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-full flex items-center justify-center"
+                      className="h-12 w-12 p-0 hover:scale-110 transition-transform duration-300 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-full flex items-center justify-center touch-manipulation"
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation'
+                      }}
                       title="刪除記錄"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -1007,7 +1029,7 @@ function DashboardContent() {
                   </div>
                   )}
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
                   <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
                     record.dm_protein >= 35
                       ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
@@ -1064,14 +1086,14 @@ function DashboardContent() {
                     </div>
                   </div>
                   <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
-                    (record.dm_fiber >= 2.5 && record.dm_fiber <= 5)
+                    record.dm_fiber <= 2
                       ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
                       : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
                   }`}>
-                    <div className={`text-xs font-medium ${(record.dm_fiber >= 2.5 && record.dm_fiber <= 5) ? 'text-green-600' : 'text-red-600'}`}>
-                      纖維乾物比 (2.5-5%)
+                    <div className={`text-xs font-medium ${record.dm_fiber <= 2 ? 'text-green-600' : 'text-red-600'}`}>
+                      纖維乾物比 (≤2%)
                     </div>
-                    <div className={`text-sm font-bold ${(record.dm_fiber >= 2.5 && record.dm_fiber <= 5) ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`text-sm font-bold ${record.dm_fiber <= 2 ? 'text-green-600' : 'text-red-600'}`}>
                       {record.dm_fiber}%
                     </div>
                   </div>
@@ -1086,18 +1108,21 @@ function DashboardContent() {
                     <div className={`text-xs font-medium ${
                       (() => {
                         if (!record.phosphorus_percent) return 'text-gray-600'
-                        return record.phosphorus_percent <= 1.2 ? 'text-green-600' : 'text-red-600'
+                        // Convert percentage to mg/kcal estimate (rough conversion: 1% = 300mg/kcal)
+                        const phosphorusMg = record.phosphorus_percent * 300
+                        return phosphorusMg < 350 ? 'text-green-600' : 'text-red-600'
                       })()
                     }`}>
-                      磷含量 (≤1.2%)
+                      磷含量 (&lt;350mg/kcal)
                     </div>
                     <div className={`text-sm font-bold ${
                       (() => {
                         if (!record.phosphorus_percent) return 'text-gray-600'
-                        return record.phosphorus_percent <= 1.2 ? 'text-green-600' : 'text-red-600'
+                        const phosphorusMg = record.phosphorus_percent * 300
+                        return phosphorusMg < 350 ? 'text-green-600' : 'text-red-600'
                       })()
                     }`}>
-                      {record.phosphorus_percent ? `${record.phosphorus_percent}%` : '未提供'}
+                      {record.phosphorus_percent ? `${Math.round(record.phosphorus_percent * 300)}mg/kcal` : '未提供'}
                     </div>
                   </div>
                   <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
@@ -1125,6 +1150,18 @@ function DashboardContent() {
                       {record.calcium_phosphorus_ratio ? `${record.calcium_phosphorus_ratio.toFixed(2)}:1` : '未提供'}
                     </div>
                   </div>
+                  <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
+                    record.moisture_percent >= 63
+                      ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                      : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                  }`}>
+                    <div className={`text-xs font-medium ${record.moisture_percent >= 63 ? 'text-green-600' : 'text-red-600'}`}>
+                      水分含量 (≥63%)
+                    </div>
+                    <div className={`text-sm font-bold ${record.moisture_percent >= 63 ? 'text-green-600' : 'text-red-600'}`}>
+                      {record.moisture_percent}%
+                    </div>
+                  </div>
                 </div>
 
                 {/* Separator between dry matter indicators and calorie ratios */}
@@ -1137,17 +1174,17 @@ function DashboardContent() {
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     {record.protein_calorie_ratio && (
                       <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
-                        record.protein_calorie_ratio >= 45 && record.protein_calorie_ratio <= 50
+                        record.protein_calorie_ratio >= 45 && record.protein_calorie_ratio <= 60
                           ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
                           : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
                       }`}>
                         <div className={`text-xs font-medium ${
-                          record.protein_calorie_ratio >= 45 && record.protein_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
+                          record.protein_calorie_ratio >= 45 && record.protein_calorie_ratio <= 60 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          蛋白質熱量比 (45-50%)
+                          蛋白質熱量比 (45-60%)
                         </div>
                         <div className={`text-sm font-bold ${
-                          record.protein_calorie_ratio >= 45 && record.protein_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
+                          record.protein_calorie_ratio >= 45 && record.protein_calorie_ratio <= 60 ? 'text-green-600' : 'text-red-600'
                         }`}>
                           {record.protein_calorie_ratio}%
                         </div>
@@ -1155,17 +1192,17 @@ function DashboardContent() {
                     )}
                     {record.fat_calorie_ratio && (
                       <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
-                        record.fat_calorie_ratio >= 35 && record.fat_calorie_ratio <= 45
+                        record.fat_calorie_ratio >= 30 && record.fat_calorie_ratio <= 50
                           ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
                           : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
                       }`}>
                         <div className={`text-xs font-medium ${
-                          record.fat_calorie_ratio >= 35 && record.fat_calorie_ratio <= 45 ? 'text-green-600' : 'text-red-600'
+                          record.fat_calorie_ratio >= 30 && record.fat_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          脂肪熱量比 (35-45%)
+                          脂肪熱量比 (30-50%)
                         </div>
                         <div className={`text-sm font-bold ${
-                          record.fat_calorie_ratio >= 35 && record.fat_calorie_ratio <= 45 ? 'text-green-600' : 'text-red-600'
+                          record.fat_calorie_ratio >= 30 && record.fat_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
                         }`}>
                           {record.fat_calorie_ratio}%
                         </div>
@@ -1219,7 +1256,13 @@ function DashboardContent() {
       {/* 懸浮計算機按鈕 */}
       <Link href="/calculator">
         <div className="fixed bottom-20 right-4 z-[9999] group">
-          <button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white w-14 h-14 rounded-full shadow-2xl hover:shadow-primary/25 transition-all duration-300 hover:scale-110 animate-pulse-slow flex items-center justify-center group-hover:animate-none">
+          <button 
+            className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white w-16 h-16 rounded-full shadow-2xl hover:shadow-primary/25 transition-all duration-300 hover:scale-110 animate-pulse-slow flex items-center justify-center group-hover:animate-none touch-manipulation"
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation'
+            }}
+          >
             <Calculator className="h-6 w-6" />
           </button>
           <div className="absolute bottom-16 right-0 bg-black/75 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">

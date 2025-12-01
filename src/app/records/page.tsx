@@ -200,7 +200,11 @@ export default function RecordsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="hover:scale-110 transition-transform duration-300"
+                        className="hover:scale-110 transition-transform duration-300 h-12 w-12 touch-manipulation"
+                        style={{
+                          WebkitTapHighlightColor: 'transparent',
+                          touchAction: 'manipulation'
+                        }}
                         onClick={() => toggleFavorite(record.id, record.favorited)}
                       >
                         {record.favorited ? '⭐' : '☆'}

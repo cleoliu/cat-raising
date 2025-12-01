@@ -168,7 +168,11 @@ export default function RegisterPage() {
 
               <Button 
                 type="submit" 
-                className="w-full gradient-primary text-white hover:scale-105 transition-all duration-300 h-12 rounded-xl font-semibold shadow-lg animate-glow" 
+                className="w-full gradient-primary text-white hover:scale-105 transition-all duration-300 h-14 rounded-xl font-semibold shadow-lg animate-glow touch-manipulation"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation'
+                }} 
                 disabled={loading}
               >
                 <UserPlus className="mr-2 h-5 w-5" />
@@ -189,7 +193,11 @@ export default function RegisterPage() {
 
             <Button 
               variant="outline" 
-              className="w-full glass hover:scale-105 transition-all duration-300 h-12 rounded-xl border-primary/30" 
+              className="w-full glass hover:scale-105 transition-all duration-300 h-14 rounded-xl border-primary/30 touch-manipulation"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation'
+              }} 
               onClick={handleGoogleRegister}
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">

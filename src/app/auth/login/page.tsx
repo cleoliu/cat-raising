@@ -123,7 +123,11 @@ export default function LoginPage() {
 
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-yellow-200 to-yellow-300 hover:from-yellow-300 hover:to-yellow-400 text-gray-800 hover:scale-105 transition-all duration-300 h-12 rounded-xl font-semibold shadow-lg" 
+                className="w-full bg-gradient-to-r from-yellow-200 to-yellow-300 hover:from-yellow-300 hover:to-yellow-400 text-gray-800 hover:scale-105 transition-all duration-300 h-14 rounded-xl font-semibold shadow-lg touch-manipulation"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation'
+                }} 
                 disabled={loading}
               >
                 <LogIn className="mr-2 h-5 w-5" />
@@ -144,7 +148,11 @@ export default function LoginPage() {
 
             <Button 
               variant="outline" 
-              className="w-full glass hover:scale-105 transition-all duration-300 h-12 rounded-xl border-primary/30" 
+              className="w-full glass hover:scale-105 transition-all duration-300 h-14 rounded-xl border-primary/30 touch-manipulation"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation'
+              }} 
               onClick={handleGoogleLogin}
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">

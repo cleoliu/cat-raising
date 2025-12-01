@@ -33,7 +33,7 @@ export default function Home() {
 
             {/* 酷炫按鈕 - 等寬設計 */}
             <div className="flex flex-col gap-4 sm:flex-row justify-center items-center max-w-md mx-auto">
-              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-primary via-accent to-secondary hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90 text-white font-bold py-4 px-8 rounded-2xl shadow-2xl hover:shadow-primary/40 transition-all duration-500 hover:scale-110 animate-pulse border-2 border-white/20 w-full sm:w-48">
+              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-primary via-accent to-secondary hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90 text-white font-bold py-5 px-8 rounded-2xl shadow-2xl hover:shadow-primary/40 transition-all duration-500 hover:scale-110 animate-pulse border-2 border-white/20 w-full sm:w-48 touch-manipulation" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
                 <Link href="/auth/register" className="relative z-10 flex items-center justify-center gap-3">
                   <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                   免費開始使用
@@ -41,7 +41,7 @@ export default function Home() {
                 </Link>
               </Button>
               
-              <Button asChild size="lg" className="group relative overflow-hidden bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-semibold py-4 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 border-2 border-white/30 hover:border-white/50 w-full sm:w-48">
+              <Button asChild size="lg" className="group relative overflow-hidden bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-semibold py-5 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 border-2 border-white/30 hover:border-white/50 w-full sm:w-48 touch-manipulation" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
                 <Link href="/auth/login" className="relative z-10 flex items-center justify-center gap-3">
                   登入
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>

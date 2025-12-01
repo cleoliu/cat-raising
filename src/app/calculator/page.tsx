@@ -23,6 +23,7 @@ export default function CalculatorPage() {
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
   const lastSaveTime = useRef(0)
+  const saveInProgressRef = useRef(false) // 額外的全局鎖
   
   // Form data
   const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
@@ -176,16 +177,33 @@ export default function CalculatorPage() {
   const handleSave = async () => {
     const now = Date.now()
     
-    // 防止重複提交：檢查狀態和時間間隔
-    if (!user || !result || saving || savingRef.current || (now - lastSaveTime.current < 2000)) {
+    // 增強防止重複提交：多重檢查
+    if (!user || !result || saving || savingRef.current || saveInProgressRef.current || (now - lastSaveTime.current < 5000)) {
+      console.log('Duplicate save attempt prevented', { 
+        user: !!user, 
+        result: !!result, 
+        saving, 
+        savingRefCurrent: savingRef.current,
+        saveInProgressRefCurrent: saveInProgressRef.current,
+        timeDiff: now - lastSaveTime.current 
+      })
       return
     }
 
+    // 立即設置所有防護狀態
     setSaving(true)
     savingRef.current = true
+    saveInProgressRef.current = true
     lastSaveTime.current = now
+    
+    console.log('Starting save process', { userId: user.id, timestamp: now })
+    
+    // 額外保護：創建唯一標識符來追蹤這次保存
+    const saveId = `${user.id}-${now}-${Math.random().toString(36).substr(2, 9)}`
+    console.log('Save ID:', saveId)
 
     try {
+      console.log(`[${saveId}] Creating food calculation record...`)
       // First, create the food calculation record without cat_id
       const { data: foodCalculation, error: calculationError } = await supabase
         .from('food_calculations')
@@ -224,13 +242,16 @@ export default function CalculatorPage() {
         .single()
 
       if (calculationError) {
+        console.log(`[${saveId}] Food calculation creation failed:`, calculationError)
         alert('保存失敗：' + calculationError.message)
         return
       }
+      
+      console.log(`[${saveId}] Food calculation created successfully:`, foodCalculation.id)
 
       // If cats are selected, create associations in the junction table
       if (selectedCatIds.length > 0) {
-        console.log('Saving cat associations:', selectedCatIds, 'for calculation:', foodCalculation.id)
+        console.log(`[${saveId}] Saving cat associations:`, selectedCatIds, 'for calculation:', foodCalculation.id)
         
         const catAssociations = selectedCatIds.map(catId => ({
           food_calculation_id: foodCalculation.id,
@@ -247,25 +268,33 @@ export default function CalculatorPage() {
 
         if (associationError) {
           // If association fails, we could either delete the calculation or continue
-          console.error('Cat association error:', associationError)
+          console.error(`[${saveId}] Cat association error:`, associationError)
           alert('記錄已保存，但貓咪關聯失敗：' + associationError.message)
         } else {
-          console.log('Cat associations saved successfully:', insertedData)
+          console.log(`[${saveId}] Cat associations saved successfully:`, insertedData)
         }
       } else {
-        console.log('No cats selected for association')
+        console.log(`[${saveId}] No cats selected for association`)
       }
 
+      console.log(`[${saveId}] Save process completed successfully`)
       alert('計算記錄已保存！')
       
       // 跳轉到產品頁並強制刷新
       router.push('/dashboard?refresh=' + Date.now())
 
     } catch (error: any) {
+      console.error(`[${saveId}] Save error:`, error)
       alert('保存失敗：' + error.message)
     } finally {
-      setSaving(false)
-      savingRef.current = false
+      console.log(`[${saveId}] Cleaning up save state...`)
+      // 延遲重置狀態，確保不會立即再次觸發
+      setTimeout(() => {
+        console.log(`[${saveId}] Save state reset complete`)
+        setSaving(false)
+        savingRef.current = false
+        saveInProgressRef.current = false
+      }, 2000)
     }
   }
 
@@ -654,7 +683,7 @@ export default function CalculatorPage() {
                     {/* Main Results */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-foreground animate-slide-up">營養成分乾物質分析</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
                           result.dm_protein >= 35 
                             ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
@@ -718,16 +747,16 @@ export default function CalculatorPage() {
                           <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
                         </div>
                         <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
-                          (result.dm_fiber >= 2.5 && result.dm_fiber <= 5)
+                          result.dm_fiber <= 2
                             ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
                             : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
                         }`} style={{animationDelay: '0.3s'}}>
                           <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
-                            (result.dm_fiber >= 2.5 && result.dm_fiber <= 5) ? 'text-green-600' : 'text-red-600'
+                            result.dm_fiber <= 2 ? 'text-green-600' : 'text-red-600'
                           }`}>
-                            纖維乾物比 (2.5-5%)
+                            纖維乾物比 (≤2%)
                           </div>
-                          <div className={`text-xl font-bold ${(result.dm_fiber >= 2.5 && result.dm_fiber <= 5) ? 'text-green-600' : 'text-red-600'}`}>
+                          <div className={`text-xl font-bold ${result.dm_fiber <= 2 ? 'text-green-600' : 'text-red-600'}`}>
                             {result.dm_fiber}%
                           </div>
                           <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
@@ -744,18 +773,21 @@ export default function CalculatorPage() {
                           <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
                             (() => {
                               if (!formData.phosphorus_percent) return 'text-gray-600'
-                              return formData.phosphorus_percent <= 1.2 ? 'text-green-600' : 'text-red-600'
+                              // Convert percentage to mg/kcal estimate (rough conversion: 1% = 300mg/kcal)
+                              const phosphorusMg = formData.phosphorus_percent * 300
+                              return phosphorusMg < 350 ? 'text-green-600' : 'text-red-600'
                             })()
                           }`}>
-                            磷含量 (≤1.2%)
+                            磷含量 (&lt;350mg/kcal)
                           </div>
                           <div className={`text-xl font-bold ${
                             (() => {
                               if (!formData.phosphorus_percent) return 'text-gray-600'
-                              return formData.phosphorus_percent <= 1.2 ? 'text-green-600' : 'text-red-600'
+                              const phosphorusMg = formData.phosphorus_percent * 300
+                              return phosphorusMg < 350 ? 'text-green-600' : 'text-red-600'
                             })()
                           }`}>
-                            {formData.phosphorus_percent ? `${formData.phosphorus_percent}%` : '未提供'}
+                            {formData.phosphorus_percent ? `${Math.round(formData.phosphorus_percent * 300)}mg/kcal` : '未提供'}
                           </div>
                           <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
                         </div>
@@ -785,6 +817,23 @@ export default function CalculatorPage() {
                           </div>
                           <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
                         </div>
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          formData.moisture_percent >= 63
+                            ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                            : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                        }`} style={{animationDelay: '0.6s'}}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            formData.moisture_percent >= 63 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            水分含量 (≥63%)
+                          </div>
+                          <div className={`text-xl font-bold ${
+                            formData.moisture_percent >= 63 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {formData.moisture_percent}%
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                        </div>
                       </div>
                     </div>
 
@@ -795,17 +844,17 @@ export default function CalculatorPage() {
                         <div className="grid grid-cols-2 gap-3">
                           {result.protein_calorie_ratio && (
                             <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
-                              result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 50
+                              result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 60
                                 ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
                                 : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
                             }`}>
                               <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
-                                result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
+                                result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 60 ? 'text-green-600' : 'text-red-600'
                               }`}>
-                                蛋白質熱量比 (45-50%)
+                                蛋白質熱量比 (45-60%)
                               </div>
                               <div className={`text-xl font-bold ${
-                                result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
+                                result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 60 ? 'text-green-600' : 'text-red-600'
                               }`}>
                                 {result.protein_calorie_ratio}%
                               </div>
@@ -814,17 +863,17 @@ export default function CalculatorPage() {
                           )}
                           {result.fat_calorie_ratio && (
                             <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
-                              result.fat_calorie_ratio >= 35 && result.fat_calorie_ratio <= 45
+                              result.fat_calorie_ratio >= 30 && result.fat_calorie_ratio <= 50
                                 ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
                                 : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
                             }`}>
                               <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
-                                result.fat_calorie_ratio >= 35 && result.fat_calorie_ratio <= 45 ? 'text-green-600' : 'text-red-600'
+                                result.fat_calorie_ratio >= 30 && result.fat_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
                               }`}>
-                                脂肪熱量比 (35-45%)
+                                脂肪熱量比 (30-50%)
                               </div>
                               <div className={`text-xl font-bold ${
-                                result.fat_calorie_ratio >= 35 && result.fat_calorie_ratio <= 45 ? 'text-green-600' : 'text-red-600'
+                                result.fat_calorie_ratio >= 30 && result.fat_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
                               }`}>
                                 {result.fat_calorie_ratio}%
                               </div>
@@ -856,14 +905,64 @@ export default function CalculatorPage() {
 
 
                     {/* Save Button */}
-                    <div className="pt-4 border-t border-gray-100">
-                      <Button 
-                        onClick={handleSave}
-                        className="w-full bg-gradient-to-r from-success to-success/80 hover:from-success/90 hover:to-success text-white py-3 rounded-xl font-semibold shadow-lg hover:scale-105 transition-all duration-300 animate-glow"
-                        disabled={saving}
+                    <div className="pt-6 border-t border-gray-200">
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log('Save button clicked', { 
+                            saving, 
+                            savingRefCurrent: savingRef.current, 
+                            timestamp: Date.now() 
+                          })
+                          
+                          // 多重檢查防止重複點擊
+                          if (saving || savingRef.current || saveInProgressRef.current) {
+                            console.log('Save prevented - already in progress')
+                            return
+                          }
+                          
+                          if (!user || !result) {
+                            console.log('Save prevented - missing user or result')
+                            return
+                          }
+                          
+                          const now = Date.now()
+                          if (now - lastSaveTime.current < 5000) {
+                            console.log('Save prevented - too soon after last save')
+                            return
+                          }
+                          
+                          console.log('Proceeding with save...')
+                          handleSave()
+                        }}
+                        disabled={saving || savingRef.current || saveInProgressRef.current}
+                        className={`
+                          w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300
+                          ${saving || savingRef.current || saveInProgressRef.current
+                            ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                            : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 active:scale-95 shadow-lg hover:shadow-xl'
+                          }
+                          text-white transform hover:scale-105
+                          focus:outline-none focus:ring-4 focus:ring-green-200
+                          touch-manipulation
+                        `}
+                        style={{
+                          minHeight: '56px',
+                          WebkitTapHighlightColor: 'transparent'
+                        }}
                       >
-                        {saving ? '💾 保存中...' : '💾 保存計算記錄'}
-                      </Button>
+                        {saving || savingRef.current || saveInProgressRef.current ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                            保存中...
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-2">
+                            💾 保存計算記錄
+                          </span>
+                        )}
+                      </button>
                     </div>
 
                   </div>
