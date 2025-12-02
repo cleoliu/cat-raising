@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import CatAvatar from '@/components/CatAvatar'
+import Image from 'next/image'
 import type { User } from '@supabase/supabase-js'
 
 interface FoodRecord {
@@ -183,10 +184,17 @@ export default function RecordsPage() {
               <CardContent className="py-12">
                 <div className="text-center">
                   <div className="relative mb-8">
-                    <div className="w-16 h-16 glass rounded-full flex items-center justify-center mx-auto animate-float border-primary/30">
-                      📊
+                    <div className="w-20 h-20 glass rounded-full flex items-center justify-center mx-auto animate-float border-primary/30 p-4">
+                      <Image
+                        src="/cat-food-icon.png"
+                        alt="貓糧圖標"
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-contain"
+                        unoptimized={true}
+                      />
                     </div>
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-20 h-20 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-2xl"></div>
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-24 h-24 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-2xl"></div>
                   </div>
                   <h3 className="text-lg font-medium text-foreground mb-2">
                     還沒有計算記錄

@@ -170,12 +170,6 @@ export default function CatsPage() {
     setShowAddForm(true)
   }
 
-  const handleCancelEdit = () => {
-    console.log('Cancel edit clicked') // Debug log
-    setEditingCat(null)
-    setFormData({ name: '', birthday: '', weight: '', avatar_id: 'cat-1' })
-    setShowAddForm(false)
-  }
 
   const handleDelete = async (catId: string) => {
     if (!confirm('確定要刪除這隻貓咪嗎？這將會一併刪除相關的計算記錄。')) {
@@ -264,7 +258,7 @@ export default function CatsPage() {
                   {/* Avatar Selection */}
                   <div className="space-y-3">
                     <Label>選擇貓咪頭像</Label>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="grid grid-cols-5 gap-3">
                       {CAT_AVATARS.map((avatar) => (
                         <button
                           key={avatar.id}
@@ -275,7 +269,7 @@ export default function CatsPage() {
                             console.log(`Avatar ${avatar.id} clicked`)
                             setFormData({ ...formData, avatar_id: avatar.id })
                           }}
-                          className={`p-2 rounded-xl border-2 transition-all duration-300 hover:scale-110 touch-manipulation relative ${
+                          className={`p-2 rounded-xl border-2 transition-all duration-300 hover:scale-110 touch-manipulation relative aspect-square ${
                             formData.avatar_id === avatar.id 
                               ? 'border-primary bg-primary/10 shadow-lg' 
                               : 'border-primary/30 hover:border-primary/60'
@@ -285,8 +279,6 @@ export default function CatsPage() {
                             zIndex: 100,
                             pointerEvents: 'auto',
                             touchAction: 'manipulation',
-                            minHeight: '60px',
-                            minWidth: '60px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center'

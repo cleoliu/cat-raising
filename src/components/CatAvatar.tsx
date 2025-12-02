@@ -20,7 +20,9 @@ export const CAT_AVATARS = [
   { id: 'cat-13', name: '三花貓', image: '/cats/cat-12.png' },
   { id: 'cat-14', name: '黑白貓', image: '/cats/cat-13.png' },
   { id: 'cat-15', name: '黑色貓咪', image: '/cats/cat-14.png' },
-  { id: 'cat-16', name: '玉米貓', image: '/cats/cat-15.png' }
+  { id: 'cat-16', name: '玉米貓', image: '/cats/cat-15.png' },
+  { id: 'cat-17', name: '新貓咪', image: '/cats/cat-16.png' },
+  { id: 'cat-18', name: '特殊貓咪', image: '/cats/cat-17.png' }
 ]
 
 interface CatAvatarProps {

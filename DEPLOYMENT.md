@@ -21,7 +21,7 @@ public/
 │   ├── cat-0.png     # 白色小貓
 │   ├── cat-1.png     # 暹羅貓
 │   ├── ...
-│   └── cat-15.png    # 共16個貓咪頭像
+│   └── cat-17.png    # 共18個貓咪頭像
 ├── icons/            # PWA 圖標 (見 PWA-ICONS-GUIDE.md)
 │   ├── icon-72x72.png
 │   ├── icon-96x96.png
@@ -382,9 +382,9 @@ npm run type-check
 
 ### 圖片載入問題
 
-確認 `public/cats/` 目錄中有所有 16 個貓咪頭像：
+確認 `public/cats/` 目錄中有所有 18 個貓咪頭像：
 
-- cat-0.png 到 cat-15.png
+- cat-0.png 到 cat-17.png
 - 檔案大小合理（建議 < 100KB）
 
 ## 🚀 生產環境最佳化
