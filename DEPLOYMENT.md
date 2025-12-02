@@ -159,14 +159,14 @@ CREATE POLICY "Users can insert own cat associations" ON public.food_calculation
         )
         AND
         (
-            -- 檢查產品記錄存在且屬於當前用戶
+            -- 檢查食品記錄存在且屬於當前用戶
             EXISTS (
                 SELECT 1 FROM public.food_calculations fc 
                 WHERE fc.id = food_calculation_id 
                 AND fc.user_id = auth.uid()
             )
             OR
-            -- 或者，如果產品記錄是在同一個事務中剛創建的，允許插入
+            -- 或者，如果食品記錄是在同一個事務中剛創建的，允許插入
             -- 這個檢查會在事務提交時再次驗證
             food_calculation_id IS NOT NULL
         )

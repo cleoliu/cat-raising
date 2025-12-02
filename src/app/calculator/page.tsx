@@ -191,7 +191,7 @@ export default function CalculatorPage() {
         console.log(`[${saveId}] Save process completed successfully`)
         alert('計算記錄已保存！')
         
-        // 跳轉到產品頁並強制刷新
+        // 跳轉到食品頁並強制刷新
         router.push('/dashboard?refresh=' + Date.now())
       } catch (error) {
         console.error('Unexpected error during save:', error)
@@ -279,7 +279,7 @@ export default function CalculatorPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="product">產品名稱 *</Label>
+                        <Label htmlFor="product">食品名稱 *</Label>
                         <Input
                           id="product"
                           type="text"
@@ -474,7 +474,7 @@ export default function CalculatorPage() {
 
                   {/* Product Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium">產品資訊 - 可選</h3>
+                    <h3 className="text-lg font-medium">食品資訊 - 可選</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="target_age">適用年齡</Label>
@@ -494,7 +494,7 @@ export default function CalculatorPage() {
                         <Label htmlFor="food_type">種類</Label>
                         <Select value={formData.food_type || ''} onValueChange={(value) => handleInputChange('food_type', value || undefined)}>
                           <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
-                            <SelectValue placeholder="選擇產品種類" />
+                            <SelectValue placeholder="選擇食品種類" />
                           </SelectTrigger>
                           <SelectContent className="glass backdrop-blur-lg border-primary/20">
                             <SelectItem value="主食罐" className="hover:bg-primary/10">主食罐</SelectItem>

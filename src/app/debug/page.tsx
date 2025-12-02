@@ -67,7 +67,7 @@ export default function DebugPage() {
 
       // 4. 測試創建關聯記錄的權限
       try {
-        // 先創建一個測試產品記錄
+        // 先創建一個測試食品記錄
         const { data: testFood, error: foodError } = await supabase
           .from('food_calculations')
           .insert({
@@ -91,9 +91,9 @@ export default function DebugPage() {
           .single()
 
         if (foodError) {
-          addResult('測試產品創建', 'error', '無法創建測試產品記錄', foodError)
+          addResult('測試食品創建', 'error', '無法創建測試食品記錄', foodError)
         } else {
-          addResult('測試產品創建', 'success', '測試產品記錄創建成功')
+          addResult('測試食品創建', 'success', '測試食品記錄創建成功')
 
           // 獲取用戶的貓咪
           const { data: userCats, error: catsError } = await supabase
@@ -126,7 +126,7 @@ export default function DebugPage() {
             }
           }
 
-          // 清理測試產品記錄
+          // 清理測試食品記錄
           await supabase
             .from('food_calculations')
             .delete()

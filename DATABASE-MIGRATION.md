@@ -21,7 +21,7 @@
 1. 連線到你的 Supabase 資料庫
 2. 在 SQL Editor 中依序執行以下遷移檔案：
    - `migration-add-cat-fields.sql` - 貓咪頭像和生日欄位
-   - `migration-add-new-columns.sql` - 產品資訊欄位
+   - `migration-add-new-columns.sql` - 食品資訊欄位
    - `migration-multiple-cats.sql` - 多貓咪關聯表
    - `migration-add-calorie-fields.sql` - 熱量分析欄位
 3. 重啟應用程式
@@ -37,7 +37,7 @@ ADD COLUMN IF NOT EXISTS avatar_id VARCHAR(20) DEFAULT 'cat-1';
 ALTER TABLE public.cats 
 ADD COLUMN IF NOT EXISTS birthday DATE;
 
--- 2. 添加產品資訊欄位
+-- 2. 添加食品資訊欄位
 ALTER TABLE public.food_calculations 
 ADD COLUMN IF NOT EXISTS carbohydrate_percent DECIMAL(5,2) 
 CHECK (carbohydrate_percent >= 0 AND carbohydrate_percent <= 100);
@@ -93,14 +93,14 @@ CREATE POLICY "Users can insert own cat associations" ON public.food_calculation
         )
         AND
         (
-            -- 檢查產品記錄存在且屬於當前用戶
+            -- 檢查食品記錄存在且屬於當前用戶
             EXISTS (
                 SELECT 1 FROM public.food_calculations fc 
                 WHERE fc.id = food_calculation_id 
                 AND fc.user_id = auth.uid()
             )
             OR
-            -- 或者，如果產品記錄是在同一個事務中剛創建的，允許插入
+            -- 或者，如果食品記錄是在同一個事務中剛創建的，允許插入
             -- 這個檢查會在事務提交時再次驗證
             food_calculation_id IS NOT NULL
         )
@@ -165,13 +165,13 @@ WHERE avatar_id IS NULL;
 ### 熱量分析功能
 5. ✅ 在計算器中輸入熱量數據 (kcal/100g)
 6. ✅ 查看蛋白質熱量比、脂肪熱量比、碳水熱量比
-7. ✅ 在產品頁面看到熱量比指標
+7. ✅ 在食品頁面看到熱量比指標
 8. ✅ 編輯現有記錄時可以修改熱量數據
 
 ### 多貓咪關聯功能
 9. ✅ 在計算器中選擇多隻貓咪
-10. ✅ 在產品頁面看到關聯的貓咪標籤
-11. ✅ 按貓咪篩選產品記錄
+10. ✅ 在食品頁面看到關聯的貓咪標籤
+11. ✅ 按貓咪篩選食品記錄
 
 ## 故障排除
 

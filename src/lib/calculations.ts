@@ -80,7 +80,7 @@ export function validateNutritionInput(input: Partial<FoodCalculationInput>): st
   }
   
   if (!input.product_name?.trim()) {
-    errors.push('產品名稱為必填')
+    errors.push('食品名稱為必填')
   }
 
   if (!input.food_weight || input.food_weight <= 0) {

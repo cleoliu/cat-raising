@@ -5,14 +5,14 @@
 ALTER TABLE public.food_calculations 
 ADD COLUMN IF NOT EXISTS carbohydrate_calorie_ratio DECIMAL(5,2);
 
--- 2. 創建產品與貓咪的多對多關係表
+-- 2. 創建食品與貓咪的多對多關係表
 CREATE TABLE IF NOT EXISTS public.food_calculation_cats (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     food_calculation_id UUID REFERENCES public.food_calculations(id) ON DELETE CASCADE NOT NULL,
     cat_id UUID REFERENCES public.cats(id) ON DELETE CASCADE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
-    -- 確保同一個產品不會重複關聯同一隻貓咪
+    -- 確保同一個食品不會重複關聯同一隻貓咪
     UNIQUE(food_calculation_id, cat_id)
 );
 
@@ -75,8 +75,8 @@ WHERE cat_id IS NOT NULL
 ON CONFLICT (food_calculation_id, cat_id) DO NOTHING;
 
 -- 7. 添加註釋說明
-COMMENT ON TABLE public.food_calculation_cats IS '產品計算記錄與貓咪的多對多關聯表';
-COMMENT ON COLUMN public.food_calculation_cats.food_calculation_id IS '關聯的產品計算記錄ID';
+COMMENT ON TABLE public.food_calculation_cats IS '食品計算記錄與貓咪的多對多關聯表';
+COMMENT ON COLUMN public.food_calculation_cats.food_calculation_id IS '關聯的食品計算記錄ID';
 COMMENT ON COLUMN public.food_calculation_cats.cat_id IS '關聯的貓咪ID';
 COMMENT ON COLUMN public.food_calculations.carbohydrate_calorie_ratio IS '碳水化合物熱量比 (%)';
 

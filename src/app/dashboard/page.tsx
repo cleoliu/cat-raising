@@ -548,7 +548,7 @@ function DashboardContent() {
         <div className="px-4 py-4">
           <div className="flex items-center justify-between mb-4 animate-slide-up">
             <div>
-              <h1 className="text-xl font-bold text-foreground bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">營養產品</h1>
+              <h1 className="text-xl font-bold text-foreground bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">營養食品</h1>
               <p className="text-sm text-muted-foreground">管理貓咪的營養記錄</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -568,9 +568,9 @@ function DashboardContent() {
           <Card className="mb-6 glass border-primary/20 animate-scale-in overflow-visible relative z-10">
             <CardHeader>
               <CardTitle className="text-foreground bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                編輯產品記錄
+                編輯食品記錄
               </CardTitle>
-              <CardDescription className="text-muted-foreground">修改產品的營養成分資料</CardDescription>
+              <CardDescription className="text-muted-foreground">修改食品的營養成分資料</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmitEdit} className="space-y-4 overflow-visible">
@@ -622,7 +622,7 @@ function DashboardContent() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="product_name">產品名稱 *</Label>
+                    <Label htmlFor="product_name">食品名稱 *</Label>
                     <Input
                       id="product_name"
                       type="text"
@@ -833,9 +833,9 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                {/* 產品資訊 */}
+                {/* 食品資訊 */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium">產品資訊 - 可選</h3>
+                  <h3 className="text-lg font-medium">食品資訊 - 可選</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="target_age">適用年齡</Label>
@@ -855,7 +855,7 @@ function DashboardContent() {
                       <Label htmlFor="food_type">種類</Label>
                       <Select value={formData.food_type || ''} onValueChange={(value) => setFormData({ ...formData, food_type: value || '' })}>
                         <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
-                          <SelectValue placeholder="選擇產品種類" />
+                          <SelectValue placeholder="選擇食品種類" />
                         </SelectTrigger>
                         <SelectContent className="glass backdrop-blur-lg border-primary/20 z-[9999]">
                           <SelectItem value="主食罐" className="hover:bg-primary/10">主食罐</SelectItem>
@@ -990,7 +990,7 @@ function DashboardContent() {
                     </h3>
                   </div>
 
-                  {/* 貓咪標籤和產品資訊區塊 */}
+                  {/* 貓咪標籤和食品資訊區塊 */}
                   <div className="mb-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       {/* 貓咪標籤 - 支持多貓顯示 */}
@@ -1015,7 +1015,7 @@ function DashboardContent() {
                         </span>
                       )}
                       
-                      {/* 產品資訊標籤 */}
+                      {/* 食品資訊標籤 */}
                       {record.target_age && (
                         <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full border border-blue-200">
                           {record.target_age}

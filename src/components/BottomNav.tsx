@@ -11,11 +11,11 @@ export default function BottomNav() {
   const navItems = [
     {
       href: '/dashboard',
-      label: '產品',
+      label: '食品',
       icon: (
         <Image
           src="/cat-food-icon.png"
-          alt="產品"
+          alt="食品"
           width={24}
           height={24}
           className="object-contain"
@@ -25,7 +25,7 @@ export default function BottomNav() {
       activeIcon: (
         <Image
           src="/cat-food-icon.png"
-          alt="產品"
+          alt="食品"
           width={24}
           height={24}
           className="object-contain"
