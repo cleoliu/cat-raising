@@ -1168,22 +1168,25 @@ function DashboardContent() {
                   }`}>
                     <div className={`text-xs font-medium ${
                       (() => {
-                        if (!record.phosphorus_percent) return 'text-gray-600'
-                        // Convert percentage to mg/kcal estimate (rough conversion: 1% = 300mg/kcal)
-                        const phosphorusMg = record.phosphorus_percent * 300
-                        return phosphorusMg < 350 ? 'text-green-600' : 'text-red-600'
+                        if (!record.phosphorus_percent || !record.calories_per_100g) return 'text-gray-600'
+                        // 正確公式：磷含量（mg/100kcal） = 磷含量(mg/100g) ÷ (熱量(kcal/100g) ÷ 100)
+                        // 磷含量(mg/100g) = 磷百分比 × 1000
+                        const phosphorusMg100g = record.phosphorus_percent * 1000
+                        const phosphorusMg100kcal = phosphorusMg100g / (record.calories_per_100g / 100)
+                        return phosphorusMg100kcal < 350 ? 'text-green-600' : 'text-red-600'
                       })()
                     }`}>
-                      磷含量 (&lt;350mg/kcal)
+                      磷含量 (&lt;350mg/100kcal)
                     </div>
                     <div className={`text-sm font-bold ${
                       (() => {
-                        if (!record.phosphorus_percent) return 'text-gray-600'
-                        const phosphorusMg = record.phosphorus_percent * 300
-                        return phosphorusMg < 350 ? 'text-green-600' : 'text-red-600'
+                        if (!record.phosphorus_percent || !record.calories_per_100g) return 'text-gray-600'
+                        const phosphorusMg100g = record.phosphorus_percent * 1000
+                        const phosphorusMg100kcal = phosphorusMg100g / (record.calories_per_100g / 100)
+                        return phosphorusMg100kcal < 350 ? 'text-green-600' : 'text-red-600'
                       })()
                     }`}>
-                      {record.phosphorus_percent ? `${Math.round(record.phosphorus_percent * 300)}mg/kcal` : '未提供'}
+                      {(record.phosphorus_percent && record.calories_per_100g) ? `${Math.round((record.phosphorus_percent * 1000) / (record.calories_per_100g / 100))}mg/100kcal` : '未提供'}
                     </div>
                   </div>
                   <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${

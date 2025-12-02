@@ -634,22 +634,25 @@ export default function CalculatorPage() {
                         }`} style={{animationDelay: '0.4s'}}>
                           <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
                             (() => {
-                              if (!formData.phosphorus_percent) return 'text-gray-600'
-                              // Convert percentage to mg/kcal estimate (rough conversion: 1% = 300mg/kcal)
-                              const phosphorusMg = formData.phosphorus_percent * 300
-                              return phosphorusMg < 350 ? 'text-green-600' : 'text-red-600'
+                              if (!formData.phosphorus_percent || !formData.calories_per_100g) return 'text-gray-600'
+                              // 正確公式：磷含量（mg/100kcal） = 磷含量(mg/100g) ÷ (熱量(kcal/100g) ÷ 100)
+                              // 磷含量(mg/100g) = 磷百分比 × 1000
+                              const phosphorusMg100g = formData.phosphorus_percent * 1000
+                              const phosphorusMg100kcal = phosphorusMg100g / (formData.calories_per_100g / 100)
+                              return phosphorusMg100kcal < 350 ? 'text-green-600' : 'text-red-600'
                             })()
                           }`}>
-                            磷含量 (&lt;350mg/kcal)
+                            磷含量 (&lt;350mg/100kcal)
                           </div>
                           <div className={`text-xl font-bold ${
                             (() => {
-                              if (!formData.phosphorus_percent) return 'text-gray-600'
-                              const phosphorusMg = formData.phosphorus_percent * 300
-                              return phosphorusMg < 350 ? 'text-green-600' : 'text-red-600'
+                              if (!formData.phosphorus_percent || !formData.calories_per_100g) return 'text-gray-600'
+                              const phosphorusMg100g = formData.phosphorus_percent * 1000
+                              const phosphorusMg100kcal = phosphorusMg100g / (formData.calories_per_100g / 100)
+                              return phosphorusMg100kcal < 350 ? 'text-green-600' : 'text-red-600'
                             })()
                           }`}>
-                            {formData.phosphorus_percent ? `${Math.round(formData.phosphorus_percent * 300)}mg/kcal` : '未提供'}
+                            {(formData.phosphorus_percent && formData.calories_per_100g) ? `${Math.round((formData.phosphorus_percent * 1000) / (formData.calories_per_100g / 100))}mg/100kcal` : '未提供'}
                           </div>
                           <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
                         </div>
