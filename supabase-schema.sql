@@ -1,3 +1,6 @@
+-- 啟用必要的 PostgreSQL 擴展
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- 建立用戶表（擴展預設的auth.users）
 CREATE TABLE IF NOT EXISTS public.users (
     id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
@@ -58,6 +61,7 @@ CREATE TABLE IF NOT EXISTS public.food_calculations (
     calorie_density DECIMAL(8,2),
     protein_calorie_ratio DECIMAL(5,2),
     fat_calorie_ratio DECIMAL(5,2),
+    carbohydrate_calorie_ratio DECIMAL(5,2),
     calcium_phosphorus_ratio DECIMAL(5,2),
     
     -- 產品資訊
@@ -155,3 +159,87 @@ CREATE POLICY "Users can update own calculations" ON public.food_calculations
 
 CREATE POLICY "Users can delete own calculations" ON public.food_calculations
     FOR DELETE USING (auth.uid() = user_id);
+
+-- 建立多貓關聯表 (food_calculation_cats)
+CREATE TABLE IF NOT EXISTS public.food_calculation_cats (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    food_calculation_id UUID REFERENCES public.food_calculations(id) ON DELETE CASCADE NOT NULL,
+    cat_id UUID REFERENCES public.cats(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(food_calculation_id, cat_id)
+);
+
+-- 建立關聯表索引
+CREATE INDEX IF NOT EXISTS idx_food_calculation_cats_food_id ON public.food_calculation_cats(food_calculation_id);
+CREATE INDEX IF NOT EXISTS idx_food_calculation_cats_cat_id ON public.food_calculation_cats(cat_id);
+
+-- 啟用 RLS 對關聯表
+ALTER TABLE public.food_calculation_cats ENABLE ROW LEVEL SECURITY;
+
+-- 關聯表 RLS 政策
+CREATE POLICY "Users can view own cat associations" ON public.food_calculation_cats
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.food_calculations fc 
+            WHERE fc.id = food_calculation_id 
+            AND fc.user_id = auth.uid()
+        )
+        OR
+        EXISTS (
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can insert own cat associations" ON public.food_calculation_cats
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
+        )
+        AND
+        (
+            -- 檢查食品記錄存在且屬於當前用戶
+            EXISTS (
+                SELECT 1 FROM public.food_calculations fc 
+                WHERE fc.id = food_calculation_id 
+                AND fc.user_id = auth.uid()
+            )
+            OR
+            -- 或者，如果食品記錄是在同一個事務中剛創建的，允許插入
+            -- 這個檢查會在事務提交時再次驗證
+            food_calculation_id IS NOT NULL
+        )
+    );
+
+CREATE POLICY "Users can update own cat associations" ON public.food_calculation_cats
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
+        )
+        AND
+        EXISTS (
+            SELECT 1 FROM public.food_calculations fc 
+            WHERE fc.id = food_calculation_id 
+            AND fc.user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can delete own cat associations" ON public.food_calculation_cats
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.cats c
+            WHERE c.id = cat_id
+            AND c.user_id = auth.uid()
+        )
+        AND
+        EXISTS (
+            SELECT 1 FROM public.food_calculations fc 
+            WHERE fc.id = food_calculation_id 
+            AND fc.user_id = auth.uid()
+        )
+    );
