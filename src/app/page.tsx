@@ -27,7 +27,7 @@ export default function Home() {
         <div className="relative z-10 flex-1 flex flex-col justify-end items-center px-4 pb-32">
           <div className="max-w-4xl mx-auto text-center animate-slide-up">
             {/* Title */}
-            <h1 className="mb-6 bg-gradient-to-br from-primary via-accent to-secondary bg-clip-text text-4xl font-extrabold tracking-wider text-transparent md:text-6xl drop-shadow-lg">
+            <h1 className="mb-6 bg-gradient-to-br from-primary via-accent to-secondary bg-clip-text text-2xl sm:text-4xl font-extrabold tracking-wide sm:tracking-wider text-transparent md:text-6xl drop-shadow-lg px-2">
               C A T - R A I S I N G
             </h1>
 
@@ -80,30 +80,35 @@ export default function Home() {
               title="健康記錄"
               description="完整的醫療保健記錄，追蹤疫苗、體檢、用藥等重要健康資訊。"
               delay="0.1s"
+              comingSoon={true}
             />
             <FeatureCard
               icon={<FileText className="h-10 w-10 text-blue-500" />}
               title="飲食日記"
               description="詳細記錄每日飲食攝取，包含餵食時間、份量與貓咪反應。"
               delay="0.2s"
+              comingSoon={true}
             />
             <FeatureCard
               icon={<Bell className="h-10 w-10 text-orange-500" />}
               title="智能提醒"
               description="餵食、用藥、清潔、體檢等重要任務提醒，不再錯過照護時間。"
               delay="0.3s"
+              comingSoon={true}
             />
             <FeatureCard
               icon={<DollarSign className="h-10 w-10 text-green-500" />}
               title="支出管理"
               description="詳細記錄貓咪相關花費，包含飼料、醫療、用品等開支統計。"
               delay="0.4s"
+              comingSoon={true}
             />
             <FeatureCard
               icon={<Package className="h-10 w-10 text-purple-500" />}
               title="庫存追蹤"
               description="管理貓糧、貓砂、玩具等消耗品庫存，提前預警補貨時間。"
               delay="0.5s"
+              comingSoon={true}
             />
             <FeatureCard
               icon={<Cat className="h-10 w-10 text-secondary" />}
@@ -116,12 +121,14 @@ export default function Home() {
               title="數據分析"
               description="每月自動生成詳細報表，分析健康趨勢、支出統計與照護品質。"
               delay="0.7s"
+              comingSoon={true}
             />
             <FeatureCard
               icon={<CheckCircle className="h-10 w-10 text-success" />}
               title="雲端同步"
               description="所有資料雲端備份，多裝置同步，隨時隨地存取貓咪資訊。"
               delay="0.8s"
+              comingSoon={true}
             />
           </div>
         </div>
@@ -130,13 +137,20 @@ export default function Home() {
   )
 }
 
-function FeatureCard({ icon, title, description, delay }: { icon: React.ReactNode, title: string, description: string, delay: string }) {
+function FeatureCard({ icon, title, description, delay, comingSoon = false }: { icon: React.ReactNode, title: string, description: string, delay: string, comingSoon?: boolean }) {
   return (
-    <Card className="glass group relative overflow-hidden hover:scale-105 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-slide-up border-primary/20" style={{animationDelay: delay}}>
+    <Card className={`glass group relative overflow-hidden hover:scale-105 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-slide-up border-primary/20 ${comingSoon ? 'opacity-75' : ''}`} style={{animationDelay: delay}}>
+      {comingSoon && (
+        <div className="absolute top-3 right-3 z-20">
+          <span className="bg-gradient-to-r from-orange-400 to-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg">
+            敬請期待
+          </span>
+        </div>
+      )}
       <div className="absolute top-0 left-0 h-full w-full bg-gradient-to-br from-primary/20 via-accent/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
       <div className="absolute -top-20 -right-20 h-40 w-40 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
       <CardHeader className="relative z-10">
-        <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 backdrop-blur-sm ring-1 ring-primary/30 group-hover:ring-primary/50 transition-all duration-300 group-hover:scale-110">
+        <div className={`mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 backdrop-blur-sm ring-1 ring-primary/30 group-hover:ring-primary/50 transition-all duration-300 group-hover:scale-110 ${comingSoon ? 'grayscale-0' : ''}`}>
           {icon}
         </div>
         <CardTitle className="text-2xl font-bold mb-3">{title}</CardTitle>
