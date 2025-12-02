@@ -81,6 +81,7 @@ export interface CalculationResult {
   dm_fat: number
   dm_fiber: number
   dm_ash: number
+  total_calories?: number
   calorie_density?: number
   protein_calorie_ratio?: number
   fat_calorie_ratio?: number

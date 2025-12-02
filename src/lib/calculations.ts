@@ -18,19 +18,20 @@ export function calculateNutrition(input: FoodCalculationInput): CalculationResu
     dm_ash: Number(dmAsh.toFixed(2)),
   }
 
-  // 熱量計算（當提供時）
-  if (input.total_calories && input.food_weight) {
-    const caloreDensity = (input.total_calories / input.food_weight) * 100
+  // 計算整體熱量（使用重量和單位熱量）
+  if (input.calories_per_100g && input.food_weight) {
+    const totalCalories = (input.calories_per_100g / 100) * input.food_weight
+    result.total_calories = Number(totalCalories.toFixed(2))
+    
+    const caloreDensity = (totalCalories / input.food_weight) * 100
     result.calorie_density = Number(caloreDensity.toFixed(2))
   }
 
-  // 熱量比計算 - 使用現有的熱量資訊
+  // 熱量比計算 - 使用單位熱量資訊
   let caloriesPerGram: number | undefined
   
   if (input.calories_per_100g) {
     caloriesPerGram = input.calories_per_100g / 100
-  } else if (input.total_calories && input.food_weight) {
-    caloriesPerGram = input.total_calories / input.food_weight
   }
 
   if (caloriesPerGram) {

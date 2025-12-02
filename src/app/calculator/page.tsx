@@ -4,20 +4,16 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { calculateNutrition, validateNutritionInput } from '@/lib/calculations'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
-import CatAvatar from '@/components/CatAvatar'
 import type { User } from '@supabase/supabase-js'
-import type { Cat, FoodCalculationInput, CalculationResult } from '@/types'
+import type { FoodCalculationInput, CalculationResult } from '@/types'
 
 export default function CalculatorPage() {
   const [user, setUser] = useState<User | null>(null)
-  const [cats, setCats] = useState<Cat[]>([])
   const [loading, setLoading] = useState(true)
   const [calculating, setCalculating] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -26,8 +22,7 @@ export default function CalculatorPage() {
   const saveInProgressRef = useRef<boolean>(false) // 額外的全局鎖
   const savePromiseRef = useRef<Promise<void> | null>(null) // 保存 Promise 引用
   
-  // Form data - changed to support multiple cats
-  const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
+  // Form data
   const [formData, setFormData] = useState<FoodCalculationInput>({
     brand_name: '',
     product_name: '',
@@ -48,25 +43,6 @@ export default function CalculatorPage() {
   })
   
   // Smart switching state
-  interface FoodRecord {
-    id: string
-    brand_name: string
-    product_name: string
-    food_weight: number
-    total_calories?: number
-    calories_per_100g?: number
-    protein_percent: number
-    fat_percent: number
-    fiber_percent: number
-    ash_percent: number
-    moisture_percent: number
-    calcium_percent?: number
-    phosphorus_percent?: number
-    sodium_percent?: number
-    created_at: string
-  }
-  const [catHistory, setCatHistory] = useState<{ [catId: string]: FoodRecord[] }>({})
-  const [loadingHistory, setLoadingHistory] = useState(false)
   
   // Results
   const [result, setResult] = useState<CalculationResult | null>(null)
@@ -84,72 +60,14 @@ export default function CalculatorPage() {
       }
 
       setUser(user)
-      await loadCats(user.id)
       setLoading(false)
     }
 
     getUser()
   }, [router])
 
-  const loadCats = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('cats')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Error loading cats:', error)
-        return
-      }
 
-      setCats(data || [])
-    } catch (error) {
-      console.error('Error loading cats:', error)
-    }
-  }
-
-  const loadCatHistory = async (catId: string) => {
-    if (!catId || catHistory[catId]) return
-
-    setLoadingHistory(true)
-    try {
-      const { data, error } = await supabase
-        .from('food_calculations')
-        .select('*')
-        .eq('cat_id', catId)
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      if (error) {
-        console.error('Error loading cat history:', error)
-        return
-      }
-
-      setCatHistory(prev => ({
-        ...prev,
-        [catId]: data || []
-      }))
-    } catch (error) {
-      console.error('Error loading cat history:', error)
-    } finally {
-      setLoadingHistory(false)
-    }
-  }
-
-  // Handle cat selection (multiple cats)
-  const handleCatSelection = (catId: string) => {
-    setSelectedCatIds(prev => {
-      if (prev.includes(catId)) {
-        // Remove cat if already selected
-        return prev.filter(id => id !== catId)
-      } else {
-        // Add cat if not selected
-        return [...prev, catId]
-      }
-    })
-  }
 
   const handleInputChange = (field: keyof FoodCalculationInput, value: string | number | undefined) => {
     setFormData(prev => ({
@@ -231,7 +149,7 @@ export default function CalculatorPage() {
             brand_name: formData.brand_name,
             product_name: formData.product_name,
             food_weight: formData.food_weight,
-            total_calories: formData.total_calories || null,
+            total_calories: result.total_calories || null,
             calories_per_100g: formData.calories_per_100g || null,
             protein_percent: formData.protein_percent,
             fat_percent: formData.fat_percent,
@@ -267,77 +185,8 @@ export default function CalculatorPage() {
 
         console.log(`[${saveId}] Food calculation created successfully:`, foodCalculation.id)
 
-        // If cats are selected, create associations in the junction table
-        if (selectedCatIds.length > 0) {
-          console.log(`[${saveId}] Creating ${selectedCatIds.length} cat associations...`)
-          console.log(`[${saveId}] Selected cat IDs:`, selectedCatIds)
-          console.log(`[${saveId}] Food calculation ID:`, foodCalculation.id)
-          
-          // Try to create associations directly - let the error handling determine if table exists
-          const associationPromises = selectedCatIds.map(async (catId) => {
-            console.log(`[${saveId}] Inserting association: food_calculation_id=${foodCalculation.id}, cat_id=${catId}`)
-            console.log(`[${saveId}] Environment check:`, {
-              isDev: process.env.NODE_ENV === 'development',
-              supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-              hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-              userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'N/A'
-            })
-            
-            const result = await supabase
-              .from('food_calculation_cats')
-              .upsert({
-                food_calculation_id: foodCalculation.id,
-                cat_id: catId
-              }, {
-                onConflict: 'food_calculation_id,cat_id'
-              })
-            
-            if (result.error) {
-              console.error(`[${saveId}] Association insert failed for cat ${catId}:`, {
-                error: result.error,
-                errorCode: result.error.code,
-                errorMessage: result.error.message,
-                errorDetails: result.error.details,
-                errorHint: result.error.hint,
-                insertData: { food_calculation_id: foodCalculation.id, cat_id: catId }
-              })
-            } else {
-              console.log(`[${saveId}] Association insert successful for cat ${catId}:`, result.data)
-            }
-            
-            return result
-          })
-
-          const associationResults = await Promise.all(associationPromises)
-          
-          // Check for errors with detailed logging
-          const failedAssociations = associationResults.filter(result => result.error)
-          if (failedAssociations.length > 0) {
-            console.error(`[${saveId}] Some cat associations failed:`, failedAssociations)
-            
-            // Check if it's a table doesn't exist error
-            const tableNotExistErrors = failedAssociations.filter(failed => 
-              failed.error?.message?.includes('does not exist') ||
-              failed.error?.message?.includes('relation') && failed.error?.message?.includes('food_calculation_cats')
-            )
-            
-            if (tableNotExistErrors.length > 0) {
-              console.error(`[${saveId}] Association table doesn't exist - migration required`)
-              alert('錯誤：多貓關聯功能需要執行數據庫遷移。\n請執行 migration/complete-migration-for-multiple-cats.sql')
-              return
-            } else {
-              // Other types of errors
-              failedAssociations.forEach(failed => {
-                console.error(`[${saveId}] Failed association error:`, failed.error)
-              })
-              alert(`部分貓咪關聯保存失敗：${failedAssociations.length} 個關聯保存失敗。請檢查控制台日誌。`)
-            }
-          } else {
-            console.log(`[${saveId}] All ${selectedCatIds.length} cat associations created successfully`)
-          }
-        } else {
-          console.log(`[${saveId}] No cats selected, skipping association creation`)
-        }
+        // No cats association in add mode - this is handled only in edit mode
+        console.log(`[${saveId}] Skipping cat associations in add mode`)
         
         console.log(`[${saveId}] Save process completed successfully`)
         alert('計算記錄已保存！')
@@ -411,40 +260,7 @@ export default function CalculatorPage() {
           </div>
                 <form onSubmit={handleCalculate} className="space-y-6">
                   
-                  {/* Cat Selection - Multiple cats */}
-                  <div className="space-y-3">
-                    <Label>選擇貓咪（可多選，可選）</Label>
-                    <div className="glass p-4 rounded-xl border border-primary/30">
-                      {cats.length === 0 ? (
-                        <p className="text-muted-foreground text-sm">暫無貓咪資料，請先到貓咪頁面新增</p>
-                      ) : (
-                        <div className="space-y-3">
-                          {cats.map((cat) => (
-                            <div key={cat.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-primary/5 transition-colors">
-                              <input
-                                type="checkbox"
-                                id={`cat-${cat.id}`}
-                                checked={selectedCatIds.includes(cat.id)}
-                                onChange={() => handleCatSelection(cat.id)}
-                                className="h-4 w-4 text-primary focus:ring-primary border-primary/30 rounded"
-                              />
-                              <label htmlFor={`cat-${cat.id}`} className="flex items-center gap-2 flex-1 cursor-pointer">
-                                <CatAvatar avatarId={cat.avatar_id} size="sm" />
-                                <span className="text-sm font-medium">{cat.name} ({cat.age}歲, {cat.weight}kg)</span>
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    {selectedCatIds.length > 0 && (
-                      <p className="text-sm text-primary">
-                        已選擇 {selectedCatIds.length} 隻貓咪: {selectedCatIds.map(id => cats.find(c => c.id === id)?.name).join(', ')}
-                      </p>
-                    )}
-                  </div>
 
-                  {/* Removed historical records for simplicity with multiple cat selection */}
 
                   {/* Basic Information */}
                   <div className="space-y-4">
@@ -480,7 +296,7 @@ export default function CalculatorPage() {
                   {/* Weight and Calories */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium">重量與熱量</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="weight">食物重量 (g) *</Label>
                         <Input
@@ -492,19 +308,6 @@ export default function CalculatorPage() {
                           value={formData.food_weight || ''}
                           onChange={(e) => handleInputChange('food_weight', parseFloat(e.target.value) || 0)}
                           required
-                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="total_calories">整體熱量 (kcal)</Label>
-                        <Input
-                          id="total_calories"
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          placeholder="可選"
-                          value={formData.total_calories || ''}
-                          onChange={(e) => handleInputChange('total_calories', e.target.value === '' ? undefined : parseFloat(e.target.value))}
                           className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
                         />
                       </div>
@@ -672,7 +475,7 @@ export default function CalculatorPage() {
                   {/* Product Information */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium">產品資訊 - 可選</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="target_age">適用年齡</Label>
                         <Select value={formData.target_age || ''} onValueChange={(value) => handleInputChange('target_age', value || undefined)}>
@@ -741,6 +544,7 @@ export default function CalculatorPage() {
                     {/* Main Results */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-foreground animate-slide-up">營養成分乾物質分析</h3>
+                      
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
                           result.dm_protein >= 35 
@@ -879,10 +683,22 @@ export default function CalculatorPage() {
                     </div>
 
                     {/* Calorie Ratios - Only show if calorie data is available */}
-                    {(result.protein_calorie_ratio || result.fat_calorie_ratio || result.carbohydrate_calorie_ratio) && (
+                    {(result.total_calories || result.protein_calorie_ratio || result.fat_calorie_ratio || result.carbohydrate_calorie_ratio) && (
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-foreground animate-slide-up">熱量比分析</h3>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {/* 整體熱量顯示 - 作為第一欄 */}
+                          {result.total_calories && (
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300 hover:shadow-blue/20 p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative">
+                              <div className="text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 text-blue-600">
+                                整體熱量
+                              </div>
+                              <div className="text-xl font-bold text-blue-600">
+                                {result.total_calories} kcal
+                              </div>
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                            </div>
+                          )}
                           {result.protein_calorie_ratio && (
                             <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
                               result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 60

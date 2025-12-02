@@ -321,11 +321,17 @@ function DashboardContent() {
         }
       }
 
+      // 計算整體熱量
+      let calculatedTotalCalories = null
+      if (formData.calories_per_100g && formData.food_weight) {
+        calculatedTotalCalories = (parseFloat(formData.calories_per_100g) / 100) * parseFloat(formData.food_weight)
+      }
+
       const updatedData = {
         brand_name: formData.brand_name,
         product_name: formData.product_name,
         food_weight: parseFloat(formData.food_weight),
-        total_calories: formData.total_calories ? parseFloat(formData.total_calories) : null,
+        total_calories: calculatedTotalCalories,
         calories_per_100g: formData.calories_per_100g ? parseFloat(formData.calories_per_100g) : null,
         protein_percent: protein,
         fat_percent: fat,
@@ -568,6 +574,39 @@ function DashboardContent() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmitEdit} className="space-y-4 overflow-visible">
+                {/* 貓咪選擇 - 多選複選框 - 移至最上方 */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-medium">關聯貓咪 - 可多選</h3>
+                  <div className="glass p-4 rounded-xl border border-primary/30">
+                    {cats.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">暫無貓咪資料，請先到貓咪頁面新增</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {cats.map((cat) => (
+                          <div key={cat.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-primary/5 transition-colors">
+                            <input
+                              type="checkbox"
+                              id={`edit-cat-${cat.id}`}
+                              checked={editSelectedCatIds.includes(cat.id)}
+                              onChange={() => handleEditCatSelection(cat.id)}
+                              className="h-4 w-4 text-primary focus:ring-primary border-primary/30 rounded"
+                            />
+                            <label htmlFor={`edit-cat-${cat.id}`} className="flex items-center gap-2 flex-1 cursor-pointer">
+                              <CatAvatar avatarId={cat.avatar_id} size="sm" />
+                              <span className="text-sm font-medium">{cat.name} ({cat.age}歲, {cat.weight}kg)</span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {editSelectedCatIds.length > 0 && (
+                    <p className="text-sm text-primary">
+                      已選擇 {editSelectedCatIds.length} 隻貓咪: {editSelectedCatIds.map(id => cats.find(c => c.id === id)?.name).join(', ')}
+                    </p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="brand_name">品牌名稱 *</Label>
@@ -599,7 +638,7 @@ function DashboardContent() {
                 {/* 重量與熱量 */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">重量與熱量</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="edit_food_weight">食物重量 (g) *</Label>
                       <Input
@@ -611,19 +650,6 @@ function DashboardContent() {
                         value={formData.food_weight}
                         onChange={(e) => setFormData({ ...formData, food_weight: e.target.value })}
                         required
-                        className="glass border-primary/30 focus:border-primary focus:ring-primary"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit_total_calories">整體熱量 (kcal)</Label>
-                      <Input
-                        id="edit_total_calories"
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        placeholder="可選"
-                        value={formData.total_calories}
-                        onChange={(e) => setFormData({ ...formData, total_calories: e.target.value })}
                         className="glass border-primary/30 focus:border-primary focus:ring-primary"
                       />
                     </div>
@@ -641,6 +667,21 @@ function DashboardContent() {
                       />
                     </div>
                   </div>
+                  
+                  {/* 顯示計算出的整體熱量 */}
+                  {formData.calories_per_100g && formData.food_weight && (
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300 p-3 rounded-xl border">
+                      <div className="text-sm font-medium text-blue-600 mb-1">
+                        整體熱量（自動計算）
+                      </div>
+                      <div className="text-xl font-bold text-blue-600">
+                        {((parseFloat(formData.calories_per_100g) / 100) * parseFloat(formData.food_weight)).toFixed(2)} kcal
+                      </div>
+                      <div className="text-xs text-blue-600/70">
+                        ({formData.food_weight}g × {formData.calories_per_100g} kcal/100g)
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4">
@@ -795,7 +836,7 @@ function DashboardContent() {
                 {/* 產品資訊 */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">產品資訊 - 可選</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="target_age">適用年齡</Label>
                       <Select value={formData.target_age || ''} onValueChange={(value) => setFormData({ ...formData, target_age: value || '' })}>
@@ -829,38 +870,6 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                {/* 貓咪選擇 - 多選複選框 */}
-                <div className="space-y-3">
-                  <h3 className="text-lg font-medium">關聯貓咪 - 可多選</h3>
-                  <div className="glass p-4 rounded-xl border border-primary/30">
-                    {cats.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">暫無貓咪資料，請先到貓咪頁面新增</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {cats.map((cat) => (
-                          <div key={cat.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-primary/5 transition-colors">
-                            <input
-                              type="checkbox"
-                              id={`edit-cat-${cat.id}`}
-                              checked={editSelectedCatIds.includes(cat.id)}
-                              onChange={() => handleEditCatSelection(cat.id)}
-                              className="h-4 w-4 text-primary focus:ring-primary border-primary/30 rounded"
-                            />
-                            <label htmlFor={`edit-cat-${cat.id}`} className="flex items-center gap-2 flex-1 cursor-pointer">
-                              <CatAvatar avatarId={cat.avatar_id} size="sm" />
-                              <span className="text-sm font-medium">{cat.name} ({cat.age}歲, {cat.weight}kg)</span>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {editSelectedCatIds.length > 0 && (
-                    <p className="text-sm text-primary">
-                      已選擇 {editSelectedCatIds.length} 隻貓咪: {editSelectedCatIds.map(id => cats.find(c => c.id === id)?.name).join(', ')}
-                    </p>
-                  )}
-                </div>
 
                 </form>
                 
@@ -979,22 +988,9 @@ function DashboardContent() {
                       {record.brand_name} - {record.product_name}
                     </h3>
                     
-                    {/* 產品資訊標籤 */}
+                    {/* 貓咪標籤和產品資訊標籤 - 並排顯示 */}
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      {record.target_age && (
-                        <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full border border-blue-200">
-                          {record.target_age}
-                        </span>
-                      )}
-                      {record.food_type && (
-                        <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-200">
-                          {record.food_type}
-                        </span>
-                      )}
-                    </div>
-                    
-                    {/* 貓咪標籤 - 支持多貓顯示 */}
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      {/* 貓咪標籤 - 支持多貓顯示 */}
                       {record.food_calculation_cats && record.food_calculation_cats.length > 0 ? (
                         // 顯示關聯表中的多隻貓咪
                         record.food_calculation_cats.map((association) => (
@@ -1015,6 +1011,20 @@ function DashboardContent() {
                           未指定貓咪
                         </span>
                       )}
+                      
+                      {/* 產品資訊標籤 */}
+                      {record.target_age && (
+                        <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full border border-blue-200">
+                          {record.target_age}
+                        </span>
+                      )}
+                      {record.food_type && (
+                        <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-200">
+                          {record.food_type}
+                        </span>
+                      )}
+                      
+                      {/* 創建日期 */}
                       <span className="text-xs text-muted-foreground">
                         {new Date(record.created_at).toLocaleDateString('zh-TW')}
                       </span>
@@ -1075,6 +1085,11 @@ function DashboardContent() {
                   </div>
                   )}
 
+                {/* Separator between dry matter indicators and calorie ratios */}
+                {(record.protein_calorie_ratio || record.fat_calorie_ratio || record.carbohydrate_calorie_ratio) && (
+                  <div className="border-t border-gray-200/60 my-3"></div>
+                )}
+                
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
                   <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
                     record.dm_protein >= 35
@@ -1204,8 +1219,19 @@ function DashboardContent() {
                 )}
 
                 {/* Calorie Ratios - Only show if calorie data is available */}
-                {(record.protein_calorie_ratio || record.fat_calorie_ratio || record.carbohydrate_calorie_ratio) && (
-                  <div className="grid grid-cols-2 gap-2 mb-3">
+                {(record.total_calories || record.protein_calorie_ratio || record.fat_calorie_ratio || record.carbohydrate_calorie_ratio) && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+                    {/* 整體熱量顯示 - 作為第一欄 */}
+                    {record.total_calories && (
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300 hover:shadow-blue/20 p-2 rounded-xl border hover:shadow-lg transition-all duration-300">
+                        <div className="text-xs font-medium text-blue-600">
+                          整體熱量
+                        </div>
+                        <div className="text-sm font-bold text-blue-600">
+                          {record.total_calories} kcal
+                        </div>
+                      </div>
+                    )}
                     {record.protein_calorie_ratio && (
                       <div className={`bg-gradient-to-br p-2 rounded-xl border hover:shadow-lg transition-all duration-300 ${
                         record.protein_calorie_ratio >= 45 && record.protein_calorie_ratio <= 60
@@ -1263,9 +1289,18 @@ function DashboardContent() {
                   </div>
                 )}
 
+                {/* Separator between dry matter indicators and calorie ratios */}
+                {(record.protein_calorie_ratio || record.fat_calorie_ratio || record.carbohydrate_calorie_ratio) && (
+                  <div className="border-t border-gray-200/60 my-3"></div>
+                )}
+                
                 <div className="text-xs text-muted-foreground space-y-1">
                   <div>
-                    原始：蛋白質{record.protein_percent}%、脂肪{record.fat_percent}%、纖維{record.fiber_percent}%、灰分{record.ash_percent}%、水分{record.moisture_percent}%
+                    重量：{record.food_weight}g
+                    {record.calories_per_100g && `、單位熱量：${record.calories_per_100g} kcal/100g`}
+                  </div>
+                  <div>
+                    營養成分：蛋白質{record.protein_percent}%、脂肪{record.fat_percent}%、纖維{record.fiber_percent}%、灰分{record.ash_percent}%、水分{record.moisture_percent}%
                     {record.carbohydrate_percent && `、碳水${record.carbohydrate_percent}%`}
                   </div>
                   {(record.calcium_percent || record.phosphorus_percent || record.sodium_percent) && (
@@ -1278,6 +1313,7 @@ function DashboardContent() {
                       {record.sodium_percent && `鈉${record.sodium_percent}%`}
                     </div>
                   )}
+
                   {/* 適用年齡和種類已移至上方標籤顯示 */}
                 </div>
                 </div>
