@@ -983,13 +983,16 @@ function DashboardContent() {
             {records.map((record, index) => (
               <div key={record.id} className="relative">
                 <div className="glass border-primary/20 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 hover:scale-105 animate-slide-up group cursor-pointer rounded-3xl p-4" style={{animationDelay: `${index * 0.1}s`}}>
-                  <div className="mb-3">
-                    <h3 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors duration-300">
+                  {/* 標題區塊 */}
+                  <div className="mb-3 pr-40">
+                    <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors duration-300 break-words leading-relaxed">
                       {record.brand_name} - {record.product_name}
                     </h3>
-                    
-                    {/* 貓咪標籤和產品資訊標籤 - 並排顯示 */}
-                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  </div>
+
+                  {/* 貓咪標籤和產品資訊區塊 */}
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {/* 貓咪標籤 - 支持多貓顯示 */}
                       {record.food_calculation_cats && record.food_calculation_cats.length > 0 ? (
                         // 顯示關聯表中的多隻貓咪
@@ -1033,7 +1036,7 @@ function DashboardContent() {
 
                   {/* 浮動按鈕 - 參照管理貓咪頁樣式 */}
                   {!showEditForm && (
-                  <div className="absolute top-2 right-2 flex gap-1 z-10">
+                  <div className="absolute top-2 right-2 flex gap-px z-10">
                     <button
                       type="button"
                       onClick={(e) => {

@@ -459,7 +459,7 @@ export default function CatsPage() {
                   
                   {/* 浮動按鈕 */}
                   {!showAddForm && (
-                  <div className="absolute top-2 right-2 flex gap-1 z-10">
+                  <div className="absolute top-2 right-2 flex gap-px z-10">
                     <Button
                       variant="ghost"
                       size="sm"
