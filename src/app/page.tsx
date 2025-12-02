@@ -41,10 +41,10 @@ export default function Home() {
                 </Link>
               </Button>
               
-              <Button asChild size="lg" className="group relative overflow-hidden bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-semibold py-5 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 border-2 border-white/30 hover:border-white/50 w-full sm:w-48 touch-manipulation" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
+              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-yellow-100 to-yellow-200 hover:from-yellow-200 hover:to-yellow-300 text-gray-800 font-semibold py-5 px-8 rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-yellow-200/30 transition-all duration-500 hover:scale-105 border-2 border-yellow-200/50 hover:border-yellow-300 w-full sm:w-48 touch-manipulation" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
                 <Link href="/auth/login" className="relative z-10 flex items-center justify-center gap-3">
                   登入
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/30 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
                 </Link>
               </Button>
             </div>
