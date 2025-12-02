@@ -34,6 +34,12 @@ export default function BottomNav() {
       )
     },
     {
+      href: '/diet-diary',
+      label: '飲食日記',
+      icon: <span className="text-xl">📝</span>,
+      activeIcon: <span className="text-xl">📝</span>
+    },
+    {
       href: '/cats',
       label: '管理貓咪',
       icon: <CatAvatar avatarId="cat-1" size="sm" />,
