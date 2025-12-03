@@ -585,26 +585,26 @@ export default function DietDiaryPage() {
                           <button
                             type="button"
                             onClick={() => handleEditRecord(record)}
-                            className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-300 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-full flex items-center justify-center touch-manipulation"
+                            className="min-h-[44px] min-w-[44px] p-2 hover:scale-110 transition-transform duration-300 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-full flex items-center justify-center touch-manipulation cursor-pointer"
                             title="編輯記錄"
                             style={{
                               WebkitTapHighlightColor: 'transparent',
                               touchAction: 'manipulation'
                             }}
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Edit2 className="h-5 w-5" />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteRecord(record)}
-                            className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-300 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full flex items-center justify-center touch-manipulation"
+                            className="min-h-[44px] min-w-[44px] p-2 hover:scale-110 transition-transform duration-300 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full flex items-center justify-center touch-manipulation cursor-pointer"
                             title="刪除記錄"
                             style={{
                               WebkitTapHighlightColor: 'transparent',
                               touchAction: 'manipulation'
                             }}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-5 w-5" />
                           </button>
                         </div>
                       </div>

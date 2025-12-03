@@ -472,20 +472,20 @@ export default function CatsPage() {
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="lg"
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
                         handleDelete(cat.id)
                       }}
-                      className="h-12 w-12 p-0 hover:scale-110 transition-transform duration-300 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-full touch-manipulation"
+                      className="min-h-[48px] min-w-[48px] p-2 hover:scale-110 transition-transform duration-300 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-full touch-manipulation cursor-pointer"
                       style={{
                         WebkitTapHighlightColor: 'transparent',
                         touchAction: 'manipulation'
                       }}
                       title="刪除貓咪"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-5 w-5" />
                     </Button>
                   </div>
                   )}
