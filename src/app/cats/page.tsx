@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
 import CatAvatar, { CAT_AVATARS } from '@/components/CatAvatar'
+import { formatTaiwanDate } from '@/lib/dateUtils'
 import { Edit2, Trash2, PawPrint } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import type { Cat } from '@/types'
@@ -434,7 +435,7 @@ export default function CatsPage() {
                               {cat.name}
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                              {cat.age} 歲（{cat.birthday ? `${new Date(cat.birthday).toLocaleDateString('zh-TW')}` : '未設定生日'}） • {cat.weight} kg
+                              {cat.age} 歲（{cat.birthday ? formatTaiwanDate(cat.birthday) : '未設定生日'}） • {cat.weight} kg
                             </p>
                           </div>
                         </div>

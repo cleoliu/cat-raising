@@ -10,6 +10,7 @@ import BottomNav from '@/components/BottomNav'
 import CatAvatar from '@/components/CatAvatar'
 import { Plus, ChevronLeft, ChevronRight, Edit2, Trash2, MoreVertical } from 'lucide-react'
 import Image from 'next/image'
+import { formatTaiwanTime, getCurrentTaiwanDateString } from '@/lib/dateUtils'
 import type { User } from '@supabase/supabase-js'
 
 interface Cat {
@@ -47,13 +48,7 @@ export default function DietDiaryPage() {
   const [records, setRecords] = useState<DietRecord[]>([])
   const [cats, setCats] = useState<Cat[]>([])
   const [selectedCatId, setSelectedCatId] = useState<string>('all')
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  })
+  const [selectedDate, setSelectedDate] = useState<string>(getCurrentTaiwanDateString())
   const [loading, setLoading] = useState(true)
   const [dailySummary, setDailySummary] = useState({
     feeding_count: 0,
@@ -295,21 +290,13 @@ export default function DietDiaryPage() {
     setSelectedDate(currentDate.toISOString().split('T')[0])
   }
 
-  const getTodayDateString = () => {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
   const goToToday = () => {
-    const todayString = getTodayDateString()
+    const todayString = getCurrentTaiwanDateString()
     console.log('Going to today:', todayString)
     setSelectedDate(todayString)
   }
 
-  const isToday = selectedDate === getTodayDateString()
+  const isToday = selectedDate === getCurrentTaiwanDateString()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -575,10 +562,7 @@ export default function DietDiaryPage() {
                             {record.record_type === 'medication' && '💉 藥物'}
                           </span>
                           <span className="text-sm font-medium text-foreground">
-                            {new Date(record.record_time).toLocaleTimeString('zh-TW', { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
+                            {formatTaiwanTime(record.record_time)}
                           </span>
                           {record.food_name && (
                             <span className="text-sm font-medium text-foreground">

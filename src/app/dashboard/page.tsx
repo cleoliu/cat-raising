@@ -12,6 +12,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import BottomNav from '@/components/BottomNav'
 import CatAvatar from '@/components/CatAvatar'
+import { formatTaiwanDate } from '@/lib/dateUtils'
 import { Trash2, Calculator, Edit2 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
@@ -1037,7 +1038,7 @@ function DashboardContent() {
                       
                       {/* 創建日期 */}
                       <span className="text-xs text-muted-foreground">
-                        {new Date(record.created_at).toLocaleDateString('zh-TW')}
+                        {formatTaiwanDate(record.created_at)}
                       </span>
                     </div>
                   </div>

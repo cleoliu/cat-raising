@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Save } from 'lucide-react'
 import CatAvatar from '@/components/CatAvatar'
+import { getCurrentTaiwanDateTime, utcToTaiwanDateTime, taiwanDateTimeToUtc } from '@/lib/dateUtils'
 import type { User } from '@supabase/supabase-js'
 
 interface Cat {
@@ -30,29 +31,6 @@ interface FoodCalculation {
 type RecordType = 'feeding' | 'water' | 'supplement' | 'medication'
 
 function AddRecordContent() {
-  // Helper function to get current Taiwan time in datetime-local format
-  const getTaiwanDateTime = () => {
-    const now = new Date()
-    // Taiwan is UTC+8
-    const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000))
-    return taiwanTime.toISOString().slice(0, 16)
-  }
-
-  // Helper function to convert UTC date to Taiwan datetime-local format
-  const utcToTaiwanDateTime = (utcDateString: string) => {
-    const utcDate = new Date(utcDateString)
-    const taiwanTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000))
-    return taiwanTime.toISOString().slice(0, 16)
-  }
-
-  // Helper function to convert Taiwan datetime-local to UTC for storage
-  const taiwanDateTimeToUtc = (taiwanDateTime: string) => {
-    const localDate = new Date(taiwanDateTime)
-    // Subtract 8 hours to convert Taiwan time to UTC
-    const utcDate = new Date(localDate.getTime() - (8 * 60 * 60 * 1000))
-    return utcDate.toISOString()
-  }
-
   const [user, setUser] = useState<User | null>(null)
   const [cats, setCats] = useState<Cat[]>([])
   const [foodCalculations, setFoodCalculations] = useState<FoodCalculation[]>([])
@@ -67,7 +45,7 @@ function AddRecordContent() {
   
   const [formData, setFormData] = useState({
     cat_id: '',
-    record_time: getTaiwanDateTime(), // Taiwan time in YYYY-MM-DDTHH:MM format
+    record_time: getCurrentTaiwanDateTime(), // Taiwan time in YYYY-MM-DDTHH:MM format
     
     // Feeding fields
     food_calculation_id: '',
