@@ -30,6 +30,29 @@ interface FoodCalculation {
 type RecordType = 'feeding' | 'water' | 'supplement' | 'medication'
 
 function AddRecordContent() {
+  // Helper function to get current Taiwan time in datetime-local format
+  const getTaiwanDateTime = () => {
+    const now = new Date()
+    // Taiwan is UTC+8
+    const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000))
+    return taiwanTime.toISOString().slice(0, 16)
+  }
+
+  // Helper function to convert UTC date to Taiwan datetime-local format
+  const utcToTaiwanDateTime = (utcDateString: string) => {
+    const utcDate = new Date(utcDateString)
+    const taiwanTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000))
+    return taiwanTime.toISOString().slice(0, 16)
+  }
+
+  // Helper function to convert Taiwan datetime-local to UTC for storage
+  const taiwanDateTimeToUtc = (taiwanDateTime: string) => {
+    const localDate = new Date(taiwanDateTime)
+    // Subtract 8 hours to convert Taiwan time to UTC
+    const utcDate = new Date(localDate.getTime() - (8 * 60 * 60 * 1000))
+    return utcDate.toISOString()
+  }
+
   const [user, setUser] = useState<User | null>(null)
   const [cats, setCats] = useState<Cat[]>([])
   const [foodCalculations, setFoodCalculations] = useState<FoodCalculation[]>([])
@@ -44,7 +67,7 @@ function AddRecordContent() {
   
   const [formData, setFormData] = useState({
     cat_id: '',
-    record_time: new Date().toISOString().slice(0, 16), // YYYY-MM-DDTHH:MM format
+    record_time: getTaiwanDateTime(), // Taiwan time in YYYY-MM-DDTHH:MM format
     
     // Feeding fields
     food_calculation_id: '',
@@ -195,7 +218,7 @@ function AddRecordContent() {
           setFormData({
             ...formData,
             cat_id: record.cat_id || '',
-            record_time: record.feeding_time ? new Date(record.feeding_time).toISOString().slice(0, 16) : formData.record_time,
+            record_time: record.feeding_time ? utcToTaiwanDateTime(record.feeding_time) : formData.record_time,
             food_calculation_id: record.food_calculation_id || '',
             custom_food_name: record.custom_food_name || '',
             planned_amount: record.planned_amount?.toString() || '',
@@ -212,7 +235,7 @@ function AddRecordContent() {
           setFormData({
             ...formData,
             cat_id: record.cat_id || '',
-            record_time: record.record_time ? new Date(record.record_time).toISOString().slice(0, 16) : formData.record_time,
+            record_time: record.record_time ? utcToTaiwanDateTime(record.record_time) : formData.record_time,
             water_amount: record.water_amount?.toString() || '',
             water_type: record.water_type || 'tap_water',
             water_source: record.water_source || '',
@@ -224,7 +247,7 @@ function AddRecordContent() {
           setFormData({
             ...formData,
             cat_id: record.cat_id || '',
-            record_time: record.record_time ? new Date(record.record_time).toISOString().slice(0, 16) : formData.record_time,
+            record_time: record.record_time ? utcToTaiwanDateTime(record.record_time) : formData.record_time,
             product_name: record.product_name || '',
             product_type: record.product_type || '',
             dosage_amount: record.dosage_amount?.toString() || '',
@@ -265,7 +288,7 @@ function AddRecordContent() {
           endpoint = '/api/feeding-records'
           requestBody = {
             ...requestBody,
-            feeding_time: formData.record_time,
+            feeding_time: taiwanDateTimeToUtc(formData.record_time),
             food_calculation_id: formData.food_calculation_id || null,
             custom_food_name: formData.custom_food_name || null,
             planned_amount: formData.planned_amount ? parseFloat(formData.planned_amount) : null,
@@ -282,8 +305,8 @@ function AddRecordContent() {
           endpoint = '/api/water-records'
           requestBody = {
             ...requestBody,
-            record_date: formData.record_time.split('T')[0], // Extract date part
-            record_time: formData.record_time,
+            record_date: formData.record_time.split('T')[0], // Extract date part (still in Taiwan timezone for date)
+            record_time: taiwanDateTimeToUtc(formData.record_time),
             water_amount: formData.water_amount ? parseFloat(formData.water_amount) : null,
             water_type: formData.water_type,
             water_source: formData.water_source || null
@@ -295,7 +318,7 @@ function AddRecordContent() {
           endpoint = '/api/supplement-records'
           requestBody = {
             ...requestBody,
-            record_time: formData.record_time,
+            record_time: taiwanDateTimeToUtc(formData.record_time),
             record_type: recordType,
             product_name: formData.product_name,
             product_type: formData.product_type || null,
