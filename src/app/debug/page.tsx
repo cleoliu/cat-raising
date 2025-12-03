@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCurrentVersion, manualClearCache, VERSION_INFO } from '@/lib/version'
 
 interface DiagnosticResult {
   test: string
@@ -180,6 +181,44 @@ export default function DebugPage() {
           <p className="text-gray-600 mb-4">
             這個頁面會幫助診斷部署環境中貓咪關聯功能的問題。
           </p>
+          
+          {/* 版本信息和快取管理 */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h3 className="text-lg font-semibold text-blue-800 mb-3">📱 應用程式信息</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-blue-600">版本號：</span>
+                  <span className="font-mono bg-blue-100 px-2 py-1 rounded text-xs">{getCurrentVersion()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-600">建置時間：</span>
+                  <span className="font-mono bg-blue-100 px-2 py-1 rounded text-xs">
+                    {new Date(VERSION_INFO.buildTime).toLocaleString('zh-TW')}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-600">建置環境：</span>
+                  <span className="font-mono bg-blue-100 px-2 py-1 rounded text-xs">{VERSION_INFO.buildEnv}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-blue-600">快取管理：</span>
+                  <button
+                    onClick={manualClearCache}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs transition-colors"
+                  >
+                    清除快取並重新載入
+                  </button>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-600">自動更新：</span>
+                  <span className="text-green-600 text-xs">✓ 已啟用</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {loading && (

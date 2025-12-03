@@ -6,6 +6,14 @@ const nextConfig: NextConfig = {
     // 確保 API 路由不會被緩存
     forceSwcTransforms: true,
   },
+
+  // 生成唯一的 build ID 來強制客戶端更新
+  generateBuildId: async () => {
+    // 使用時間戳和隨機數生成唯一的 build ID
+    const timestamp = Date.now()
+    const random = Math.random().toString(36).substring(7)
+    return `build-${timestamp}-${random}`
+  },
   
   // 設定標頭以控制緩存
   async headers() {
