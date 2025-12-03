@@ -71,7 +71,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json(data || [])
+    const response = NextResponse.json(data || [])
+    // 禁用緩存，確保總是返回最新資料
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    return response
   } catch (error) {
     console.error('Unexpected error in GET /api/supplement-records:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

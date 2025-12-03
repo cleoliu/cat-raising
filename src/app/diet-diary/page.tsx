@@ -97,11 +97,19 @@ export default function DietDiaryPage() {
 
       // Build API URLs with cat filter if specific cat is selected
       const catQuery = catId !== 'all' ? `&cat_id=${catId}` : ''
+      // Add cache-busting parameter to ensure fresh data
+      const cacheBuster = `&_t=${Date.now()}`
       
       const [feedingResponse, waterResponse, supplementResponse] = await Promise.all([
-        fetch(`/api/feeding-records?date_from=${startOfDay}&date_to=${endOfDay}${catQuery}`, { headers: authHeaders }),
-        fetch(`/api/water-records?date_from=${date}&date_to=${date}${catQuery}`, { headers: authHeaders }),
-        fetch(`/api/supplement-records?date_from=${startOfDay}&date_to=${endOfDay}${catQuery}`, { headers: authHeaders })
+        fetch(`/api/feeding-records?date_from=${startOfDay}&date_to=${endOfDay}${catQuery}${cacheBuster}`, { 
+          headers: { ...authHeaders, 'Cache-Control': 'no-cache' }
+        }),
+        fetch(`/api/water-records?date_from=${date}&date_to=${date}${catQuery}${cacheBuster}`, { 
+          headers: { ...authHeaders, 'Cache-Control': 'no-cache' }
+        }),
+        fetch(`/api/supplement-records?date_from=${startOfDay}&date_to=${endOfDay}${catQuery}${cacheBuster}`, { 
+          headers: { ...authHeaders, 'Cache-Control': 'no-cache' }
+        })
       ])
 
       const [feedingRecords, waterRecords, supplementRecords] = await Promise.all([
