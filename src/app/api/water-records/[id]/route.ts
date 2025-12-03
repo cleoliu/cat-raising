@@ -192,7 +192,18 @@ export async function DELETE(
       .eq('id', id)
       .single()
 
-    if (existingError || !existingRecord || existingRecord.user_id !== user.id) {
+    if (existingError) {
+      console.error('Error checking existing record:', existingError)
+      return NextResponse.json({ error: 'Record not found or unauthorized' }, { status: 404 })
+    }
+
+    if (!existingRecord) {
+      console.error('Record not found:', id)
+      return NextResponse.json({ error: 'Record not found or unauthorized' }, { status: 404 })
+    }
+
+    if (existingRecord.user_id !== user.id) {
+      console.error('Unauthorized access attempt:', { recordUserId: existingRecord.user_id, currentUserId: user.id })
       return NextResponse.json({ error: 'Record not found or unauthorized' }, { status: 404 })
     }
 

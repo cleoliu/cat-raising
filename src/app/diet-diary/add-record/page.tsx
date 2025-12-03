@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Save } from 'lucide-react'
 import CatAvatar from '@/components/CatAvatar'
-import { getCurrentTaiwanDateTime, utcToTaiwanDateTime, taiwanDateTimeToUtc } from '@/lib/dateUtils'
+import { getCurrentTaiwanDateTime, utcToTaiwanDateTime } from '@/lib/dateUtils'
 import type { User } from '@supabase/supabase-js'
 
 interface Cat {
@@ -266,7 +266,7 @@ function AddRecordContent() {
           endpoint = '/api/feeding-records'
           requestBody = {
             ...requestBody,
-            feeding_time: taiwanDateTimeToUtc(formData.record_time),
+            feeding_time: formData.record_time + ':00+08:00', // Store as Taiwan time with timezone
             food_calculation_id: formData.food_calculation_id || null,
             custom_food_name: formData.custom_food_name || null,
             planned_amount: formData.planned_amount ? parseFloat(formData.planned_amount) : null,
@@ -284,7 +284,7 @@ function AddRecordContent() {
           requestBody = {
             ...requestBody,
             record_date: formData.record_time.split('T')[0], // Extract date part (still in Taiwan timezone for date)
-            record_time: taiwanDateTimeToUtc(formData.record_time),
+            record_time: formData.record_time + ':00+08:00', // Store as Taiwan time with timezone
             water_amount: formData.water_amount ? parseFloat(formData.water_amount) : null,
             water_type: formData.water_type,
             water_source: formData.water_source || null
@@ -296,7 +296,7 @@ function AddRecordContent() {
           endpoint = '/api/supplement-records'
           requestBody = {
             ...requestBody,
-            record_time: taiwanDateTimeToUtc(formData.record_time),
+            record_time: formData.record_time + ':00+08:00', // Store as Taiwan time with timezone
             record_type: recordType,
             product_name: formData.product_name,
             product_type: formData.product_type || null,

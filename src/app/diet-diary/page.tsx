@@ -10,7 +10,7 @@ import BottomNav from '@/components/BottomNav'
 import CatAvatar from '@/components/CatAvatar'
 import { Plus, ChevronLeft, ChevronRight, Edit2, Trash2, MoreVertical } from 'lucide-react'
 import Image from 'next/image'
-import { formatTaiwanTime, getCurrentTaiwanDateString } from '@/lib/dateUtils'
+import { getCurrentTaiwanDateString } from '@/lib/dateUtils'
 import type { User } from '@supabase/supabase-js'
 
 interface Cat {
@@ -567,7 +567,11 @@ export default function DietDiaryPage() {
                             {record.record_type === 'medication' && '💉 藥物'}
                           </span>
                           <span className="text-sm font-medium text-foreground">
-                            {formatTaiwanTime(record.record_time)}
+                            {new Date(record.record_time).toLocaleTimeString('zh-TW', { 
+                              hour: '2-digit', 
+                              minute: '2-digit',
+                              hour12: false
+                            })}
                           </span>
                           {record.food_name && (
                             <span className="text-sm font-medium text-foreground">

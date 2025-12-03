@@ -7,10 +7,8 @@
  */
 export const formatTaiwanDate = (utcDateString: string): string => {
   const utcDate = new Date(utcDateString)
-  // Taiwan is UTC+8
-  const taiwanTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000))
-  return taiwanTime.toLocaleDateString('zh-TW', {
-    timeZone: 'UTC' // Since we already adjusted for Taiwan time
+  return utcDate.toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei'
   })
 }
 
@@ -19,12 +17,10 @@ export const formatTaiwanDate = (utcDateString: string): string => {
  */
 export const formatTaiwanTime = (utcDateString: string): string => {
   const utcDate = new Date(utcDateString)
-  // Taiwan is UTC+8
-  const taiwanTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000))
-  return taiwanTime.toLocaleTimeString('zh-TW', { 
+  return utcDate.toLocaleTimeString('zh-TW', { 
     hour: '2-digit', 
     minute: '2-digit',
-    timeZone: 'UTC' // Since we already adjusted for Taiwan time
+    timeZone: 'Asia/Taipei'
   })
 }
 
@@ -33,15 +29,13 @@ export const formatTaiwanTime = (utcDateString: string): string => {
  */
 export const formatTaiwanDateTime = (utcDateString: string): string => {
   const utcDate = new Date(utcDateString)
-  // Taiwan is UTC+8
-  const taiwanTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000))
-  return taiwanTime.toLocaleString('zh-TW', {
+  return utcDate.toLocaleString('zh-TW', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'UTC' // Since we already adjusted for Taiwan time
+    timeZone: 'Asia/Taipei'
   })
 }
 
@@ -50,9 +44,16 @@ export const formatTaiwanDateTime = (utcDateString: string): string => {
  */
 export const getCurrentTaiwanDateTime = (): string => {
   const now = new Date()
-  // Taiwan is UTC+8
-  const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000))
-  return taiwanTime.toISOString().slice(0, 16)
+  // Convert to Taiwan timezone and format for datetime-local input
+  const formatter = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+  return formatter.format(now).replace(' ', 'T')
 }
 
 /**
@@ -60,8 +61,15 @@ export const getCurrentTaiwanDateTime = (): string => {
  */
 export const utcToTaiwanDateTime = (utcDateString: string): string => {
   const utcDate = new Date(utcDateString)
-  const taiwanTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000))
-  return taiwanTime.toISOString().slice(0, 16)
+  const formatter = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+  return formatter.format(utcDate).replace(' ', 'T')
 }
 
 /**
@@ -79,10 +87,11 @@ export const taiwanDateTimeToUtc = (taiwanDateTime: string): string => {
  */
 export const getCurrentTaiwanDateString = (): string => {
   const now = new Date()
-  // Taiwan is UTC+8
-  const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000))
-  const year = taiwanTime.getUTCFullYear()
-  const month = String(taiwanTime.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(taiwanTime.getUTCDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const formatter = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+  return formatter.format(now)
 }
