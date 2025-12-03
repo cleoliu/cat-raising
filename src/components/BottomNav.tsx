@@ -36,8 +36,26 @@ export default function BottomNav() {
     {
       href: '/diet-diary',
       label: '飲食日記',
-      icon: <span className="text-xl">📝</span>,
-      activeIcon: <span className="text-xl">📝</span>
+      icon: (
+        <Image
+          src="/diet-diary-icon.png"
+          alt="飲食日記"
+          width={24}
+          height={24}
+          className="object-contain"
+          unoptimized={true}
+        />
+      ),
+      activeIcon: (
+        <Image
+          src="/diet-diary-icon.png"
+          alt="飲食日記"
+          width={24}
+          height={24}
+          className="object-contain"
+          unoptimized={true}
+        />
+      )
     },
     {
       href: '/cats',

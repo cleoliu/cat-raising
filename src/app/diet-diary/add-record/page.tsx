@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Save } from 'lucide-react'
 import CatAvatar from '@/components/CatAvatar'
 import type { User } from '@supabase/supabase-js'
@@ -36,6 +36,11 @@ export default function AddRecordPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [recordType, setRecordType] = useState<RecordType>('feeding')
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  
+  const searchParams = useSearchParams()
+  const router = useRouter()
   
   const [formData, setFormData] = useState({
     cat_id: '',
@@ -75,8 +80,6 @@ export default function AddRecordPage() {
     notes: ''
   })
 
-  const router = useRouter()
-
   useEffect(() => {
     const getUser = async () => {
       const { data: { user }, error } = await supabase.auth.getUser()
@@ -91,6 +94,18 @@ export default function AddRecordPage() {
         loadCats(user.id),
         loadFoodCalculations(user.id)
       ])
+      
+      // Check for edit parameters
+      const editId = searchParams.get('edit')
+      const editType = searchParams.get('type') as RecordType
+      
+      if (editId && editType) {
+        setIsEditMode(true)
+        setEditingId(editId)
+        setRecordType(editType)
+        await loadEditRecord(editId, editType)
+      }
+      
       setLoading(false)
     }
 
@@ -141,6 +156,97 @@ export default function AddRecordPage() {
     }
   }
 
+  const loadEditRecord = async (recordId: string, type: RecordType) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('No valid session found')
+      }
+
+      let endpoint = ''
+      switch (type) {
+        case 'feeding':
+          endpoint = `/api/feeding-records/${recordId}`
+          break
+        case 'water':
+          endpoint = `/api/water-records/${recordId}`
+          break
+        case 'supplement':
+        case 'medication':
+          endpoint = `/api/supplement-records/${recordId}`
+          break
+      }
+
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to load record')
+      }
+
+      const record = await response.json()
+      
+      // Populate form based on record type
+      switch (type) {
+        case 'feeding':
+          setFormData({
+            ...formData,
+            cat_id: record.cat_id || '',
+            record_time: record.feeding_time ? new Date(record.feeding_time).toISOString().slice(0, 16) : formData.record_time,
+            food_calculation_id: record.food_calculation_id || '',
+            custom_food_name: record.custom_food_name || '',
+            planned_amount: record.planned_amount?.toString() || '',
+            actual_amount: record.actual_amount?.toString() || '',
+            remaining_amount: record.remaining_amount?.toString() || '',
+            amount_unit: record.amount_unit || 'grams',
+            appetite_score: record.appetite_score?.toString() || '',
+            eating_speed: record.eating_speed || '',
+            post_meal_behavior: record.post_meal_behavior || '',
+            notes: record.notes || ''
+          })
+          break
+        case 'water':
+          setFormData({
+            ...formData,
+            cat_id: record.cat_id || '',
+            record_time: record.record_time ? new Date(record.record_time).toISOString().slice(0, 16) : formData.record_time,
+            water_amount: record.water_amount?.toString() || '',
+            water_type: record.water_type || 'tap_water',
+            water_source: record.water_source || '',
+            notes: record.notes || ''
+          })
+          break
+        case 'supplement':
+        case 'medication':
+          setFormData({
+            ...formData,
+            cat_id: record.cat_id || '',
+            record_time: record.record_time ? new Date(record.record_time).toISOString().slice(0, 16) : formData.record_time,
+            product_name: record.product_name || '',
+            product_type: record.product_type || '',
+            dosage_amount: record.dosage_amount?.toString() || '',
+            dosage_unit: record.dosage_unit || 'ml',
+            frequency: record.frequency || '',
+            treatment_duration: record.treatment_duration?.toString() || '',
+            administration_method: record.administration_method || 'oral',
+            reaction_notes: record.reaction_notes || '',
+            side_effects: record.side_effects || '',
+            effectiveness_rating: record.effectiveness_rating?.toString() || '',
+            prescribed_by: record.prescribed_by || '',
+            prescription_date: record.prescription_date || '',
+            notes: record.notes || ''
+          })
+          break
+      }
+    } catch (error: any) {
+      console.error('Error loading edit record:', error)
+      alert('載入記錄失敗：' + error.message)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user || submitting) return
@@ -162,7 +268,7 @@ export default function AddRecordPage() {
             feeding_time: formData.record_time,
             food_calculation_id: formData.food_calculation_id || null,
             custom_food_name: formData.custom_food_name || null,
-            planned_amount: parseFloat(formData.planned_amount),
+            planned_amount: formData.planned_amount ? parseFloat(formData.planned_amount) : null,
             actual_amount: formData.actual_amount ? parseFloat(formData.actual_amount) : null,
             remaining_amount: formData.remaining_amount ? parseFloat(formData.remaining_amount) : null,
             amount_unit: formData.amount_unit,
@@ -178,7 +284,7 @@ export default function AddRecordPage() {
             ...requestBody,
             record_date: formData.record_time.split('T')[0], // Extract date part
             record_time: formData.record_time,
-            water_amount: parseFloat(formData.water_amount),
+            water_amount: formData.water_amount ? parseFloat(formData.water_amount) : null,
             water_type: formData.water_type,
             water_source: formData.water_source || null
           }
@@ -193,7 +299,7 @@ export default function AddRecordPage() {
             record_type: recordType,
             product_name: formData.product_name,
             product_type: formData.product_type || null,
-            dosage_amount: parseFloat(formData.dosage_amount),
+            dosage_amount: formData.dosage_amount ? parseFloat(formData.dosage_amount) : null,
             dosage_unit: formData.dosage_unit,
             frequency: formData.frequency || null,
             treatment_duration: formData.treatment_duration ? parseInt(formData.treatment_duration) : null,
@@ -213,8 +319,11 @@ export default function AddRecordPage() {
         throw new Error('No valid session found')
       }
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
+      const method = isEditMode ? 'PUT' : 'POST'
+      const url = isEditMode ? `${endpoint}/${editingId}` : endpoint
+      
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
@@ -224,14 +333,14 @@ export default function AddRecordPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create record')
+        throw new Error(errorData.error || `Failed to ${isEditMode ? 'update' : 'create'} record`)
       }
 
       // Success - redirect back to diet diary
       router.push('/diet-diary')
     } catch (error: any) {
-      console.error('Error creating record:', error)
-      alert('新增記錄失敗：' + error.message)
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} record:`, error)
+      alert(`${isEditMode ? '更新' : '新增'}記錄失敗：` + error.message)
     } finally {
       setSubmitting(false)
     }
@@ -295,7 +404,7 @@ export default function AddRecordPage() {
               {/* Amount Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="planned_amount">計劃份量 *</Label>
+                  <Label htmlFor="planned_amount">計劃份量</Label>
                   <Input
                     id="planned_amount"
                     type="number"
@@ -303,7 +412,6 @@ export default function AddRecordPage() {
                     min="0"
                     value={formData.planned_amount}
                     onChange={(e) => setFormData(prev => ({ ...prev, planned_amount: e.target.value }))}
-                    required
                     className="glass border-primary/30"
                   />
                 </div>
@@ -414,7 +522,7 @@ export default function AddRecordPage() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="water_amount">飲水量 (ml) *</Label>
+                  <Label htmlFor="water_amount">飲水量 (ml)</Label>
                   <Input
                     id="water_amount"
                     type="number"
@@ -422,7 +530,6 @@ export default function AddRecordPage() {
                     min="0"
                     value={formData.water_amount}
                     onChange={(e) => setFormData(prev => ({ ...prev, water_amount: e.target.value }))}
-                    required
                     className="glass border-primary/30"
                   />
                 </div>
@@ -495,7 +602,7 @@ export default function AddRecordPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dosage_amount">劑量 *</Label>
+                  <Label htmlFor="dosage_amount">劑量</Label>
                   <Input
                     id="dosage_amount"
                     type="number"
@@ -503,7 +610,6 @@ export default function AddRecordPage() {
                     min="0"
                     value={formData.dosage_amount}
                     onChange={(e) => setFormData(prev => ({ ...prev, dosage_amount: e.target.value }))}
-                    required
                     className="glass border-primary/30"
                   />
                 </div>
@@ -623,8 +729,12 @@ export default function AddRecordPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold text-foreground">新增飲食記錄</h1>
-            <p className="text-sm text-muted-foreground">記錄貓咪的飲食情況</p>
+            <h1 className="text-xl font-bold text-foreground">
+              {isEditMode ? '編輯飲食記錄' : '新增飲食記錄'}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isEditMode ? '修改貓咪的飲食記錄' : '記錄貓咪的飲食情況'}
+            </p>
           </div>
         </div>
 
@@ -735,12 +845,12 @@ export default function AddRecordPage() {
               {submitting ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  儲存中...
+                  {isEditMode ? '更新中...' : '儲存中...'}
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <Save className="h-4 w-4" />
-                  儲存記錄
+                  {isEditMode ? '更新記錄' : '儲存記錄'}
                 </div>
               )}
             </Button>

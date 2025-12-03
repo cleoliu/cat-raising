@@ -4,16 +4,20 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/BottomNav'
 import CatAvatar from '@/components/CatAvatar'
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Edit2, Trash2, MoreVertical } from 'lucide-react'
+import Image from 'next/image'
 import type { User } from '@supabase/supabase-js'
 
 interface Cat {
   id: string
   name: string
   avatar_id?: string
+  age: number
+  weight: number
 }
 
 interface DietRecord {
@@ -41,7 +45,15 @@ interface DietRecord {
 
 export default function DietDiaryPage() {
   const [records, setRecords] = useState<DietRecord[]>([])
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [cats, setCats] = useState<Cat[]>([])
+  const [selectedCatId, setSelectedCatId] = useState<string>('all')
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  })
   const [loading, setLoading] = useState(true)
   const [dailySummary, setDailySummary] = useState({
     feeding_count: 0,
@@ -51,7 +63,26 @@ export default function DietDiaryPage() {
   })
   const router = useRouter()
 
-  const loadRecords = async (userId: string, date: string) => {
+  const loadCats = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('cats')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error loading cats:', error)
+        return
+      }
+
+      setCats(data || [])
+    } catch (error) {
+      console.error('Error loading cats:', error)
+    }
+  }
+
+  const loadRecords = async (userId: string, date: string, catId: string = 'all') => {
     try {
       // Load all diet records for the selected date
       const startOfDay = `${date}T00:00:00.000Z`
@@ -69,10 +100,13 @@ export default function DietDiaryPage() {
         'Content-Type': 'application/json'
       }
 
+      // Build API URLs with cat filter if specific cat is selected
+      const catQuery = catId !== 'all' ? `&cat_id=${catId}` : ''
+      
       const [feedingResponse, waterResponse, supplementResponse] = await Promise.all([
-        fetch(`/api/feeding-records?date_from=${startOfDay}&date_to=${endOfDay}`, { headers: authHeaders }),
-        fetch(`/api/water-records?date_from=${date}&date_to=${date}`, { headers: authHeaders }),
-        fetch(`/api/supplement-records?date_from=${startOfDay}&date_to=${endOfDay}`, { headers: authHeaders })
+        fetch(`/api/feeding-records?date_from=${startOfDay}&date_to=${endOfDay}${catQuery}`, { headers: authHeaders }),
+        fetch(`/api/water-records?date_from=${date}&date_to=${date}${catQuery}`, { headers: authHeaders }),
+        fetch(`/api/supplement-records?date_from=${startOfDay}&date_to=${endOfDay}${catQuery}`, { headers: authHeaders })
       ])
 
       const [feedingRecords, waterRecords, supplementRecords] = await Promise.all([
@@ -219,12 +253,27 @@ export default function DietDiaryPage() {
         return
       }
 
-      await loadRecords(user.id, selectedDate)
+      await Promise.all([
+        loadCats(user.id),
+        loadRecords(user.id, selectedDate, selectedCatId)
+      ])
       setLoading(false)
     }
 
     getUser()
-  }, [router, selectedDate])
+  }, [router, selectedDate, selectedCatId])
+
+  // 當選擇貓咪改變時重新載入記錄
+  useEffect(() => {
+    const reloadRecords = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user && !loading) {
+        await loadRecords(user.id, selectedDate, selectedCatId)
+      }
+    }
+    
+    reloadRecords()
+  }, [selectedCatId, selectedDate, loading])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -246,11 +295,89 @@ export default function DietDiaryPage() {
     setSelectedDate(currentDate.toISOString().split('T')[0])
   }
 
-  const goToToday = () => {
-    setSelectedDate(new Date().toISOString().split('T')[0])
+  const getTodayDateString = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
-  const isToday = selectedDate === new Date().toISOString().split('T')[0]
+  const goToToday = () => {
+    const todayString = getTodayDateString()
+    console.log('Going to today:', todayString)
+    setSelectedDate(todayString)
+  }
+
+  const isToday = selectedDate === getTodayDateString()
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+  }
+
+  const handleDeleteRecord = async (record: DietRecord) => {
+    if (!confirm(`確定要刪除這筆${
+      record.record_type === 'feeding' ? '餵食' :
+      record.record_type === 'water' ? '飲水' :
+      record.record_type === 'supplement' ? '保健品' :
+      '藥物'
+    }記錄嗎？`)) {
+      return
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        console.error('No valid session for API requests')
+        return
+      }
+
+      const authHeaders = {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      }
+
+      let endpoint = ''
+      switch (record.record_type) {
+        case 'feeding':
+          endpoint = `/api/feeding-records/${record.id}`
+          break
+        case 'water':
+          endpoint = `/api/water-records/${record.id}`
+          break
+        case 'supplement':
+        case 'medication':
+          endpoint = `/api/supplement-records/${record.id}`
+          break
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: authHeaders
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        console.error('Delete response:', response.status, errorData)
+        throw new Error(`刪除失敗 (${response.status}): ${errorData}`)
+      }
+
+      // Reload records after deletion
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await loadRecords(user.id, selectedDate, selectedCatId)
+      }
+    } catch (error: any) {
+      console.error('Error deleting record:', error)
+      alert('刪除記錄失敗：' + error.message)
+    }
+  }
+
+  const handleEditRecord = (record: DietRecord) => {
+    // For now, navigate to add-record page with edit parameters
+    // TODO: Implement proper edit functionality
+    router.push(`/diet-diary/add-record?edit=${record.id}&type=${record.record_type}`)
+  }
 
   if (loading) {
     return (
@@ -272,8 +399,8 @@ export default function DietDiaryPage() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 pb-20 relative overflow-hidden">
       {/* Background Effects */}
       <div className="fixed inset-0 -z-10 bg-grid opacity-10"></div>
-      <div className="fixed top-20 left-1/4 h-96 w-96 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl animate-pulse-slow"></div>
-      <div className="fixed bottom-20 right-1/4 h-96 w-96 bg-gradient-to-r from-secondary/8 to-primary/8 rounded-full blur-3xl animate-pulse-slow" style={{animationDelay: '2s'}}></div>
+      <div className="fixed top-20 left-1/4 h-96 w-96 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl animate-pulse-slow -z-10"></div>
+      <div className="fixed bottom-20 right-1/4 h-96 w-96 bg-gradient-to-r from-secondary/8 to-primary/8 rounded-full blur-3xl animate-pulse-slow -z-10" style={{animationDelay: '2s'}}></div>
       
       {/* Header */}
       <div className="glass border-b border-primary/20 sticky top-0 z-10 backdrop-blur-lg">
@@ -284,9 +411,9 @@ export default function DietDiaryPage() {
               <p className="text-sm text-muted-foreground">記錄貓咪的每日飲食</p>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 flex items-center justify-center animate-float">
-                <span className="text-lg">📝</span>
-              </div>
+              <Button variant="outline" onClick={handleLogout} className="text-xs px-2 sm:px-3 py-1 glass border-primary/30 hover:bg-primary/10 transition-all duration-300 hover:scale-105">
+                登出
+              </Button>
             </div>
           </div>
         </div>
@@ -298,11 +425,15 @@ export default function DietDiaryPage() {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              size="sm"
+              size="lg"
               onClick={() => changeDate('prev')}
-              className="hover:bg-primary/10 rounded-full"
+              className="hover:bg-primary/10 rounded-full min-w-[48px] min-h-[48px] p-3 touch-manipulation"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation'
+              }}
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-6 w-6" />
             </Button>
             
             <div className="text-center flex-1">
@@ -314,7 +445,11 @@ export default function DietDiaryPage() {
                   variant="outline"
                   size="sm"
                   onClick={goToToday}
-                  className="mt-2 text-xs glass border-primary/30"
+                  className="mt-2 text-xs glass border-primary/30 touch-manipulation"
+                  style={{
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation'
+                  }}
                 >
                   回到今天
                 </Button>
@@ -323,13 +458,41 @@ export default function DietDiaryPage() {
             
             <Button
               variant="ghost"
-              size="sm"
+              size="lg"
               onClick={() => changeDate('next')}
-              className="hover:bg-primary/10 rounded-full"
+              className="hover:bg-primary/10 rounded-full min-w-[48px] min-h-[48px] p-3 touch-manipulation"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation'
+              }}
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-6 w-6" />
             </Button>
           </div>
+        </div>
+      </div>
+
+      {/* Cat Filter */}
+      <div className="px-4 pb-4">
+        <div className="animate-slide-up" style={{animationDelay: '0.1s'}}>
+          <Select value={selectedCatId} onValueChange={setSelectedCatId}>
+            <SelectTrigger className="w-full rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
+              <SelectValue placeholder="選擇貓咪篩選" />
+            </SelectTrigger>
+            <SelectContent className="bg-white border border-gray-200 shadow-lg rounded-xl">
+              <SelectItem value="all" className="hover:bg-primary/10 flex items-center gap-2">
+                所有貓咪
+              </SelectItem>
+              {cats.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id} className="hover:bg-primary/10">
+                  <div className="flex items-center gap-2">
+                    <CatAvatar avatarId={cat.avatar_id} size="sm" />
+                    {cat.name} ({cat.age}歲, {cat.weight}kg)
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -367,8 +530,14 @@ export default function DietDiaryPage() {
             <CardContent className="py-12">
               <div className="text-center">
                 <div className="relative mb-8">
-                  <div className="w-20 h-20 glass rounded-full flex items-center justify-center mx-auto animate-float border-primary/30 p-4">
-                    <span className="text-3xl">📝</span>
+                  <div className="w-20 h-20 glass rounded-full flex items-center justify-center mx-auto animate-float border-primary/30 p-2 overflow-hidden">
+                    <Image 
+                      src="/diet-diary-icon.png" 
+                      alt="飲食日記"
+                      width={60}
+                      height={60}
+                      className="object-cover"
+                    />
                   </div>
                   <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-24 h-24 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-2xl"></div>
                 </div>
@@ -391,15 +560,9 @@ export default function DietDiaryPage() {
                       <CatAvatar avatarId={record.cat.avatar_id} size="md" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      {/* Header with time and type */}
+                      {/* Header with type and time */}
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground">
-                            {new Date(record.record_time).toLocaleTimeString('zh-TW', { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
-                          </span>
+                        <div className="flex items-center gap-2 flex-1">
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                             record.record_type === 'feeding' ? 'bg-pink-100 text-pink-700' :
                             record.record_type === 'water' ? 'bg-blue-100 text-blue-700' :
@@ -411,11 +574,45 @@ export default function DietDiaryPage() {
                             {record.record_type === 'supplement' && '💊 保健品'}
                             {record.record_type === 'medication' && '💉 藥物'}
                           </span>
+                          <span className="text-sm font-medium text-foreground">
+                            {new Date(record.record_time).toLocaleTimeString('zh-TW', { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </span>
                           {record.food_name && (
                             <span className="text-sm font-medium text-foreground">
                               {record.food_name}
                             </span>
                           )}
+                        </div>
+                        
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleEditRecord(record)}
+                            className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-300 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-full flex items-center justify-center touch-manipulation"
+                            title="編輯記錄"
+                            style={{
+                              WebkitTapHighlightColor: 'transparent',
+                              touchAction: 'manipulation'
+                            }}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRecord(record)}
+                            className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-300 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full flex items-center justify-center touch-manipulation"
+                            title="刪除記錄"
+                            style={{
+                              WebkitTapHighlightColor: 'transparent',
+                              touchAction: 'manipulation'
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
 
