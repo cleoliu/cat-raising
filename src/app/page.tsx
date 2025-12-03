@@ -33,18 +33,16 @@ export default function Home() {
 
             {/* 酷炫按鈕 - 等寬設計 */}
             <div className="flex flex-col gap-4 sm:flex-row justify-center items-center max-w-md mx-auto">
-              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-primary via-accent to-secondary hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90 text-white font-bold py-5 px-8 rounded-2xl shadow-2xl hover:shadow-primary/40 transition-all duration-500 hover:scale-110 animate-pulse border-2 border-white/20 w-full sm:w-48 touch-manipulation" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
-                <Link href="/auth/register" className="relative z-10 flex items-center justify-center gap-3">
+              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-primary via-accent to-secondary hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90 text-white font-bold py-6 px-8 rounded-2xl shadow-2xl hover:shadow-primary/40 transition-all duration-300 hover:scale-110 animate-pulse border-2 border-white/20 w-full sm:w-48 min-h-[60px] cursor-pointer" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
+                <Link href="/auth/register" className="flex items-center justify-center gap-3 w-full h-full relative z-20">
                   <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                   免費開始使用
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </Link>
               </Button>
               
-              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-yellow-100 to-yellow-200 hover:from-yellow-200 hover:to-yellow-300 text-gray-800 font-semibold py-5 px-8 rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-yellow-200/30 transition-all duration-500 hover:scale-105 border-2 border-yellow-200/50 hover:border-yellow-300 w-full sm:w-48 touch-manipulation" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
-                <Link href="/auth/login" className="relative z-10 flex items-center justify-center gap-3">
+              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-yellow-100 to-yellow-200 hover:from-yellow-200 hover:to-yellow-300 text-gray-800 font-semibold py-6 px-8 rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-yellow-200/30 transition-all duration-300 hover:scale-105 border-2 border-yellow-200/50 hover:border-yellow-300 w-full sm:w-48 min-h-[60px] cursor-pointer" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
+                <Link href="/auth/login" className="flex items-center justify-center gap-2 w-full h-full relative z-20">
                   登入
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/30 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
                 </Link>
               </Button>
             </div>
