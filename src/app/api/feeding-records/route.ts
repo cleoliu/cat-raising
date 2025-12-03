@@ -122,9 +122,9 @@ export async function POST(request: NextRequest) {
       photo_url
     } = body
 
-    if (!cat_id || !feeding_time || !planned_amount) {
+    if (!cat_id || !feeding_time) {
       return NextResponse.json(
-        { error: 'Missing required fields: cat_id, feeding_time, planned_amount' }, 
+        { error: 'Missing required fields: cat_id, feeding_time' }, 
         { status: 400 }
       )
     }
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         feeding_time,
         food_calculation_id: food_calculation_id || null,
         custom_food_name: custom_food_name || null,
-        planned_amount: parseFloat(planned_amount),
+        planned_amount: planned_amount ? parseFloat(planned_amount) : null,
         actual_amount: actual_amount ? parseFloat(actual_amount) : null,
         remaining_amount: remaining_amount ? parseFloat(remaining_amount) : null,
         amount_unit,

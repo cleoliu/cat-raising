@@ -111,9 +111,9 @@ export async function POST(request: NextRequest) {
       notes
     } = body
 
-    if (!cat_id || !record_date || !water_amount) {
+    if (!cat_id || !record_date) {
       return NextResponse.json(
-        { error: 'Missing required fields: cat_id, record_date, water_amount' }, 
+        { error: 'Missing required fields: cat_id, record_date' }, 
         { status: 400 }
       )
     }
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
         cat_id,
         record_date,
         record_time,
-        water_amount: parseFloat(water_amount),
+        water_amount: water_amount ? parseFloat(water_amount) : null,
         water_type,
         water_source: water_source || null,
         notes: notes || null

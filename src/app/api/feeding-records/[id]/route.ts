@@ -8,22 +8,22 @@ export async function GET(
   try {
     const { id } = await params
     
-    // Get auth token from request
-    const authHeader = request.headers.get('Authorization')
+    // Get authorization header
+    const authHeader = request.headers.get('authorization')
     if (!authHeader) {
-      return NextResponse.json({ error: 'No authorization header' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Create authenticated supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: { headers: { Authorization: `Bearer ${token}` } }
-      }
-    )
+    // Create Supabase client with JWT token
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    })
 
     // Get user from auth
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -59,22 +59,22 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     
-    // Get auth token from request
-    const authHeader = request.headers.get('Authorization')
+    // Get authorization header
+    const authHeader = request.headers.get('authorization')
     if (!authHeader) {
-      return NextResponse.json({ error: 'No authorization header' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Create authenticated supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: { headers: { Authorization: `Bearer ${token}` } }
-      }
-    )
+    // Create Supabase client with JWT token
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    })
 
     // Get user from auth
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -146,7 +146,7 @@ export async function PUT(
         feeding_time: feeding_time || undefined,
         food_calculation_id: food_calculation_id === null ? null : (food_calculation_id || undefined),
         custom_food_name: custom_food_name === null ? null : (custom_food_name || undefined),
-        planned_amount: planned_amount ? parseFloat(planned_amount) : undefined,
+        planned_amount: planned_amount === null ? null : (planned_amount ? parseFloat(planned_amount) : undefined),
         actual_amount: actual_amount === null ? null : (actual_amount ? parseFloat(actual_amount) : undefined),
         remaining_amount: remaining_amount === null ? null : (remaining_amount ? parseFloat(remaining_amount) : undefined),
         amount_unit: amount_unit || undefined,
@@ -187,22 +187,22 @@ export async function DELETE(
   try {
     const { id } = await params
     
-    // Get auth token from request
-    const authHeader = request.headers.get('Authorization')
+    // Get authorization header
+    const authHeader = request.headers.get('authorization')
     if (!authHeader) {
-      return NextResponse.json({ error: 'No authorization header' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Create authenticated supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: { headers: { Authorization: `Bearer ${token}` } }
-      }
-    )
+    // Create Supabase client with JWT token
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    })
 
     // Get user from auth
     const { data: { user }, error: authError } = await supabase.auth.getUser()

@@ -271,23 +271,28 @@ export default function DietDiaryPage() {
   }, [selectedCatId, selectedDate, loading])
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString + 'T00:00:00+08:00') // 確保使用台灣時區
     return date.toLocaleDateString('zh-TW', { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
-      weekday: 'long'
+      weekday: 'long',
+      timeZone: 'Asia/Taipei'
     })
   }
 
   const changeDate = (direction: 'prev' | 'next') => {
-    const currentDate = new Date(selectedDate)
+    const currentDate = new Date(selectedDate + 'T12:00:00+08:00') // 使用台灣時區，中午時間避免跨日問題
     if (direction === 'prev') {
       currentDate.setDate(currentDate.getDate() - 1)
     } else {
       currentDate.setDate(currentDate.getDate() + 1)
     }
-    setSelectedDate(currentDate.toISOString().split('T')[0])
+    // 格式化為台灣時區的日期字串
+    const year = currentDate.getFullYear()
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+    const day = String(currentDate.getDate()).padStart(2, '0')
+    setSelectedDate(`${year}-${month}-${day}`)
   }
 
   const goToToday = () => {
@@ -354,9 +359,9 @@ export default function DietDiaryPage() {
       if (user) {
         await loadRecords(user.id, selectedDate, selectedCatId)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting record:', error)
-      alert('刪除記錄失敗：' + error.message)
+      alert('刪除記錄失敗：' + (error instanceof Error ? error.message : String(error)))
     }
   }
 

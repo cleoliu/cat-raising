@@ -126,9 +126,9 @@ export async function POST(request: NextRequest) {
       notes
     } = body
 
-    if (!cat_id || !record_time || !record_type || !product_name || !dosage_amount || !dosage_unit) {
+    if (!cat_id || !record_time || !record_type || !product_name || !dosage_unit) {
       return NextResponse.json(
-        { error: 'Missing required fields: cat_id, record_time, record_type, product_name, dosage_amount, dosage_unit' }, 
+        { error: 'Missing required fields: cat_id, record_time, record_type, product_name, dosage_unit' }, 
         { status: 400 }
       )
     }
