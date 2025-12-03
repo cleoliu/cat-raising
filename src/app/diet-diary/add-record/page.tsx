@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,7 +29,7 @@ interface FoodCalculation {
 
 type RecordType = 'feeding' | 'water' | 'supplement' | 'medication'
 
-export default function AddRecordPage() {
+function AddRecordContent() {
   const [user, setUser] = useState<User | null>(null)
   const [cats, setCats] = useState<Cat[]>([])
   const [foodCalculations, setFoodCalculations] = useState<FoodCalculation[]>([])
@@ -858,5 +858,20 @@ export default function AddRecordPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function AddRecordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-20 w-20 border-4 border-primary/30 border-t-primary mx-auto mb-4"></div>
+          <p className="text-foreground font-medium">載入中...</p>
+        </div>
+      </div>
+    }>
+      <AddRecordContent />
+    </Suspense>
   )
 }
