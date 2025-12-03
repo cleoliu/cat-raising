@@ -91,10 +91,9 @@ function AddRecordContent() {
       }
 
       setUser(user)
-      await Promise.all([
-        loadCats(user.id),
-        loadFoodCalculations(user.id)
-      ])
+      await loadCats(user.id)
+      // 初始載入時不過濾食品，顯示所有食品
+      await loadFoodCalculations(user.id)
       
       // Check for edit parameters
       const editId = searchParams.get('edit')
@@ -112,6 +111,15 @@ function AddRecordContent() {
 
     getUser()
   }, [router])
+
+  // 監聽貓咪選擇變化，重新載入對應的食品計算記錄
+  useEffect(() => {
+    if (user && formData.cat_id && recordType === 'feeding') {
+      loadFoodCalculations(user.id, formData.cat_id)
+      // 清除已選擇的食品計算記錄，避免顯示不匹配的選項
+      setFormData(prev => ({ ...prev, food_calculation_id: '' }))
+    }
+  }, [formData.cat_id, user, recordType])
 
   const loadCats = async (userId: string) => {
     try {
@@ -137,21 +145,84 @@ function AddRecordContent() {
     }
   }
 
-  const loadFoodCalculations = async (userId: string) => {
+  const loadFoodCalculations = async (userId: string, catId?: string) => {
     try {
-      const { data, error } = await supabase
-        .from('food_calculations')
-        .select('id, brand_name, product_name')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(20) // Limit to recent calculations
+      if (catId) {
+        // 如果有選擇貓咪，查詢兩種食品：
+        // 1. 與該貓咪有關聯的食品
+        // 2. 沒有任何貓咪關聯的食品（通用食品）
+        
+        // 查詢與貓咪有關聯的食品
+        const { data: associatedFoods, error: associatedError } = await supabase
+          .from('food_calculations')
+          .select(`
+            id, 
+            brand_name, 
+            product_name,
+            food_calculation_cats!inner(cat_id)
+          `)
+          .eq('user_id', userId)
+          .eq('food_calculation_cats.cat_id', catId)
+          .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Error loading food calculations:', error)
-        return
+        if (associatedError) {
+          console.error('Error loading associated food calculations:', associatedError)
+        }
+
+        // 查詢所有食品計算記錄
+        const { data: allFoods, error: allFoodsError } = await supabase
+          .from('food_calculations')
+          .select('id, brand_name, product_name')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+
+        // 查詢所有有關聯的食品ID
+        const { data: allAssociations, error: associationsError } = await supabase
+          .from('food_calculation_cats')
+          .select('food_calculation_id')
+
+        if (allFoodsError) {
+          console.error('Error loading all food calculations:', allFoodsError)
+        }
+
+        if (associationsError) {
+          console.error('Error loading food associations:', associationsError)
+        }
+
+        // 在前端過濾出沒有關聯的食品
+        const associatedFoodIds = new Set((allAssociations || []).map(a => a.food_calculation_id))
+        const unassociatedFoods = (allFoods || []).filter(food => !associatedFoodIds.has(food.id))
+
+        // 合併兩個結果並去重
+        const combinedFoods = [
+          ...(associatedFoods || []),
+          ...(unassociatedFoods || [])
+        ]
+
+        // 根據 id 去重並按創建時間排序
+        const uniqueFoods = combinedFoods
+          .filter((food, index, self) => 
+            index === self.findIndex(f => f.id === food.id)
+          )
+          .slice(0, 20) // 限制數量
+
+        setFoodCalculations(uniqueFoods)
+      } else {
+        // 沒有選擇特定貓咪，載入所有食品計算記錄
+        const { data, error } = await supabase
+          .from('food_calculations')
+          .select('id, brand_name, product_name')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(20)
+
+        if (error) {
+          console.error('Error loading food calculations:', error)
+          return
+        }
+
+        setFoodCalculations(data || [])
       }
-
-      setFoodCalculations(data || [])
     } catch (error) {
       console.error('Error loading food calculations:', error)
     }
