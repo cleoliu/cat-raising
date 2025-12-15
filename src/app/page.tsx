@@ -31,16 +31,22 @@ export default function Home() {
               C A T - R A I S I N G
             </h1>
 
-            {/* 酷炫按鈕 - 等寬設計 */}
-            <div className="flex flex-col gap-4 sm:flex-row justify-center items-center max-w-md mx-auto">
-              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-primary via-accent to-secondary hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90 text-white font-bold py-6 px-8 rounded-2xl shadow-2xl hover:shadow-primary/40 transition-all duration-300 hover:scale-110 animate-pulse border-2 border-white/20 w-full sm:w-48 min-h-[60px] cursor-pointer" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
+            {/* 酷炫按鈕 - 三個按鈕設計 */}
+            <div className="flex flex-col gap-4 sm:flex-row justify-center items-center max-w-2xl mx-auto">
+              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-primary via-accent to-secondary hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90 text-white font-bold py-6 px-8 rounded-2xl shadow-2xl hover:shadow-primary/40 transition-all duration-300 hover:scale-110 animate-pulse border-2 border-white/20 w-full sm:w-44 min-h-[60px] cursor-pointer" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
                 <Link href="/auth/register" className="flex items-center justify-center gap-3 w-full h-full relative z-20">
                   <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                   免費開始使用
                 </Link>
               </Button>
               
-              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-yellow-100 to-yellow-200 hover:from-yellow-200 hover:to-yellow-300 text-gray-800 font-semibold py-6 px-8 rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-yellow-200/30 transition-all duration-300 hover:scale-105 border-2 border-yellow-200/50 hover:border-yellow-300 w-full sm:w-48 min-h-[60px] cursor-pointer" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
+              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-green-100 to-green-200 hover:from-green-200 hover:to-green-300 text-gray-800 font-semibold py-6 px-8 rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-green-200/30 transition-all duration-300 hover:scale-105 border-2 border-green-200/50 hover:border-green-300 w-full sm:w-44 min-h-[60px] cursor-pointer" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
+                <Link href="/calculator-trial" className="flex items-center justify-center gap-2 w-full h-full relative z-20">
+                  🧮 試用計算機
+                </Link>
+              </Button>
+              
+              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-yellow-100 to-yellow-200 hover:from-yellow-200 hover:to-yellow-300 text-gray-800 font-semibold py-6 px-8 rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-yellow-200/30 transition-all duration-300 hover:scale-105 border-2 border-yellow-200/50 hover:border-yellow-300 w-full sm:w-44 min-h-[60px] cursor-pointer" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
                 <Link href="/auth/login" className="flex items-center justify-center gap-2 w-full h-full relative z-20">
                   登入
                 </Link>

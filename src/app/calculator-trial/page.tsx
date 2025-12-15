@@ -1,0 +1,679 @@
+'use client'
+
+import { useState } from 'react'
+import { calculateNutrition, validateNutritionInput } from '@/lib/calculations'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import Link from 'next/link'
+import type { FoodCalculationInput, CalculationResult } from '@/types'
+
+export default function CalculatorTrialPage() {
+  const [calculating, setCalculating] = useState(false)
+  
+  // Form data
+  const [formData, setFormData] = useState<FoodCalculationInput>({
+    brand_name: '',
+    product_name: '',
+    food_weight: 0,
+    total_calories: undefined,
+    calories_per_100g: undefined,
+    protein_percent: 0,
+    fat_percent: 0,
+    fiber_percent: 0,
+    ash_percent: 0,
+    moisture_percent: 0,
+    carbohydrate_percent: undefined,
+    calcium_percent: undefined,
+    phosphorus_percent: undefined,
+    sodium_percent: undefined,
+    target_age: undefined,
+    food_type: undefined,
+  })
+  
+  // Results
+  const [result, setResult] = useState<CalculationResult | null>(null)
+  const [errors, setErrors] = useState<string[]>([])
+
+  const handleInputChange = (field: keyof FoodCalculationInput, value: string | number | undefined) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+    
+    // 清除錯誤和結果當輸入改變時
+    setErrors([])
+    setResult(null)
+  }
+
+  const handleCalculate = (e: React.FormEvent) => {
+    e.preventDefault()
+    setCalculating(true)
+    setErrors([])
+
+    try {
+      // 驗證輸入
+      const validationErrors = validateNutritionInput(formData)
+      if (validationErrors.length > 0) {
+        setErrors(validationErrors)
+        return
+      }
+
+      // 執行計算
+      const calculationResult = calculateNutrition(formData)
+      setResult(calculationResult)
+
+    } catch (error: any) {
+      setErrors(['計算失敗：' + error.message])
+    } finally {
+      setCalculating(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 pb-20 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 -z-10 bg-grid opacity-10"></div>
+      <div className="fixed top-20 left-1/4 h-96 w-96 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl animate-pulse-slow"></div>
+      <div className="fixed bottom-20 right-1/4 h-96 w-96 bg-gradient-to-r from-secondary/8 to-primary/8 rounded-full blur-3xl animate-pulse-slow" style={{animationDelay: '2s'}}></div>
+      
+      {/* Mobile Header */}
+      <div className="glass border-b border-primary/20 sticky top-0 z-10 backdrop-blur-lg">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between animate-slide-up">
+            <div className="flex items-center gap-3">
+              <Link href="/" className="text-sm text-muted-foreground hover:text-primary">
+                ← 回首頁
+              </Link>
+              <div>
+                <h1 className="text-lg font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">試用營養計算機</h1>
+                <p className="text-xs text-muted-foreground">免費體驗 · 無需註冊</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 flex items-center justify-center animate-float">
+                <span className="text-lg">🧮</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Trial Notice */}
+      <div className="px-4 py-4">
+        <div className="glass rounded-2xl p-4 border-green-200/50 bg-gradient-to-r from-green-50/50 to-green-100/50 animate-slide-up">
+          <div className="flex items-start gap-3">
+            <div className="w-6 h-6 rounded-full bg-green-200 flex items-center justify-center">
+              <span className="text-sm">✨</span>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-green-800 mb-1">免費試用版</h3>
+              <p className="text-xs text-green-700">
+                您正在使用營養計算機的試用版本。試用版本不會保存計算記錄，如需完整功能請
+                <Link href="/auth/register" className="font-semibold text-green-600 hover:text-green-500 underline ml-1">
+                  註冊帳號
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="px-4 py-2 space-y-6">
+            
+        {/* Input Form */}
+        <div className="glass rounded-3xl p-6 border-primary/20 animate-slide-up">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-foreground mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">輸入營養成分</h2>
+            <p className="text-muted-foreground">填寫貓糧包裝上的營養資訊</p>
+          </div>
+                <form onSubmit={handleCalculate} className="space-y-6">
+                  
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">基本資訊</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="brand">品牌名稱 *</Label>
+                        <Input
+                          id="brand"
+                          type="text"
+                          placeholder="例如：皇家"
+                          value={formData.brand_name}
+                          onChange={(e) => handleInputChange('brand_name', e.target.value)}
+                          required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="product">食品名稱 *</Label>
+                        <Input
+                          id="product"
+                          type="text"
+                          placeholder="例如：成貓糧"
+                          value={formData.product_name}
+                          onChange={(e) => handleInputChange('product_name', e.target.value)}
+                          required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Weight and Calories */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">重量與熱量</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="weight">食物重量 (g) *</Label>
+                        <Input
+                          id="weight"
+                          type="number"
+                          min="0.1"
+                          step="0.1"
+                          placeholder="例如：100"
+                          value={formData.food_weight || ''}
+                          onChange={(e) => handleInputChange('food_weight', parseFloat(e.target.value) || 0)}
+                          required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="calories_per_100g">單位熱量 (kcal/100g)</Label>
+                        <Input
+                          id="calories_per_100g"
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          placeholder="可選"
+                          value={formData.calories_per_100g || ''}
+                          onChange={(e) => handleInputChange('calories_per_100g', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Main Nutrients */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">主要營養成分 (%)</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="protein">蛋白質 *</Label>
+                        <Input
+                          id="protein"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="例如：32"
+                          value={formData.protein_percent || ''}
+                          onChange={(e) => handleInputChange('protein_percent', parseFloat(e.target.value) || 0)}
+                          required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="fat">脂肪 *</Label>
+                        <Input
+                          id="fat"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="例如：15"
+                          value={formData.fat_percent || ''}
+                          onChange={(e) => handleInputChange('fat_percent', parseFloat(e.target.value) || 0)}
+                          required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="carbohydrate">碳水</Label>
+                        <Input
+                          id="carbohydrate"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="例如：25"
+                          value={formData.carbohydrate_percent || ''}
+                          onChange={(e) => handleInputChange('carbohydrate_percent', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="fiber">纖維 *</Label>
+                        <Input
+                          id="fiber"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="例如：3"
+                          value={formData.fiber_percent || ''}
+                          onChange={(e) => handleInputChange('fiber_percent', parseFloat(e.target.value) || 0)}
+                          required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="ash">灰分 *</Label>
+                        <Input
+                          id="ash"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="例如：8"
+                          value={formData.ash_percent || ''}
+                          onChange={(e) => handleInputChange('ash_percent', parseFloat(e.target.value) || 0)}
+                          required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="moisture">水分 *</Label>
+                        <Input
+                          id="moisture"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="例如：10"
+                          value={formData.moisture_percent || ''}
+                          onChange={(e) => handleInputChange('moisture_percent', parseFloat(e.target.value) || 0)}
+                          required
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Minerals */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">礦物質成分 (%) - 可選</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="calcium">鈣</Label>
+                        <Input
+                          id="calcium"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          placeholder="例如：1.2"
+                          value={formData.calcium_percent || ''}
+                          onChange={(e) => handleInputChange('calcium_percent', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phosphorus">磷</Label>
+                        <Input
+                          id="phosphorus"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          placeholder="例如：1.0"
+                          value={formData.phosphorus_percent || ''}
+                          onChange={(e) => handleInputChange('phosphorus_percent', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="sodium">鈉</Label>
+                        <Input
+                          id="sodium"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          placeholder="例如：0.5"
+                          value={formData.sodium_percent || ''}
+                          onChange={(e) => handleInputChange('sodium_percent', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Product Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">食品資訊 - 可選</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="target_age">適用年齡</Label>
+                        <Select value={formData.target_age || ''} onValueChange={(value) => handleInputChange('target_age', value || undefined)}>
+                          <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
+                            <SelectValue placeholder="選擇適用年齡" />
+                          </SelectTrigger>
+                          <SelectContent className="glass backdrop-blur-lg border-primary/20">
+                            <SelectItem value="幼貓" className="hover:bg-primary/10">幼貓</SelectItem>
+                            <SelectItem value="成貓" className="hover:bg-primary/10">成貓</SelectItem>
+                            <SelectItem value="老貓" className="hover:bg-primary/10">老貓</SelectItem>
+                            <SelectItem value="全年齡" className="hover:bg-primary/10">全年齡</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="food_type">種類</Label>
+                        <Select value={formData.food_type || ''} onValueChange={(value) => handleInputChange('food_type', value || undefined)}>
+                          <SelectTrigger className="rounded-xl glass border-primary/30 focus:border-primary focus:ring-primary hover:bg-primary/5 transition-all duration-300">
+                            <SelectValue placeholder="選擇食品種類" />
+                          </SelectTrigger>
+                          <SelectContent className="glass backdrop-blur-lg border-primary/20">
+                            <SelectItem value="主食罐" className="hover:bg-primary/10">主食罐</SelectItem>
+                            <SelectItem value="餐包" className="hover:bg-primary/10">餐包</SelectItem>
+                            <SelectItem value="主食凍乾" className="hover:bg-primary/10">主食凍乾</SelectItem>
+                            <SelectItem value="零食凍乾" className="hover:bg-primary/10">零食凍乾</SelectItem>
+                            <SelectItem value="生食" className="hover:bg-primary/10">生食</SelectItem>
+                            <SelectItem value="乾糧" className="hover:bg-primary/10">乾糧</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Errors */}
+                  {errors.length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                      <h4 className="text-red-800 font-medium mb-2">請修正以下錯誤：</h4>
+                      <ul className="text-red-700 text-sm space-y-1">
+                        {errors.map((error, index) => (
+                          <li key={index}>• {error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Calculate Button */}
+                  <Button 
+                    type="submit" 
+                    className="w-full gradient-primary text-white py-3 rounded-xl font-semibold shadow-lg hover:scale-105 transition-all duration-300 animate-glow"
+                    disabled={calculating}
+                  >
+                    {calculating ? '⏳ 計算中...' : '🧮 開始計算'}
+                  </Button>
+                </form>
+        </div>
+
+        {/* Results */}
+        <div className="glass rounded-3xl p-6 border-primary/20 animate-slide-up" style={{animationDelay: '0.2s'}}>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-foreground mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">計算結果</h2>
+            <p className="text-muted-foreground">乾物質基準營養成分分析</p>
+          </div>
+                {result ? (
+                  <div className="space-y-6">
+                    
+                    {/* Main Results */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-foreground animate-slide-up">營養成分乾物質分析</h3>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          result.dm_protein >= 35 
+                            ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                            : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                        }`}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            result.dm_protein >= 35 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            蛋白質乾物比 (≥35%)
+                          </div>
+                          <div className={`text-xl font-bold ${result.dm_protein >= 35 ? 'text-green-600' : 'text-red-600'}`}>
+                            {result.dm_protein}%
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                        </div>
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          (result.dm_fat >= 30 && result.dm_fat <= 50)
+                            ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                            : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                        }`} style={{animationDelay: '0.1s'}}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            (result.dm_fat >= 30 && result.dm_fat <= 50) ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            脂肪乾物比 (30-50%)
+                          </div>
+                          <div className={`text-xl font-bold ${(result.dm_fat >= 30 && result.dm_fat <= 50) ? 'text-green-600' : 'text-red-600'}`}>
+                            {result.dm_fat}%
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                        </div>
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          (() => {
+                            if (!formData.carbohydrate_percent) return 'from-gray-100/60 to-gray-200/60 border-gray-300/30 hover:shadow-gray-200/20'
+                            const carbDM = ((formData.carbohydrate_percent / result.dry_matter_content) * 100)
+                            return carbDM <= 10
+                              ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                              : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                          })()
+                        }`} style={{animationDelay: '0.2s'}}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            (() => {
+                              if (!formData.carbohydrate_percent) return 'text-gray-600'
+                              const carbDM = ((formData.carbohydrate_percent / result.dry_matter_content) * 100)
+                              return carbDM <= 10 ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            碳水化合物乾物比 (≤10%)
+                          </div>
+                          <div className={`text-xl font-bold ${
+                            (() => {
+                              if (!formData.carbohydrate_percent) return 'text-gray-600'
+                              const carbDM = ((formData.carbohydrate_percent / result.dry_matter_content) * 100)
+                              return carbDM <= 10 ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            {formData.carbohydrate_percent 
+                              ? ((formData.carbohydrate_percent / result.dry_matter_content) * 100).toFixed(1) + '%'
+                              : '未提供'
+                            }
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                        </div>
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          result.dm_fiber <= 2
+                            ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                            : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                        }`} style={{animationDelay: '0.3s'}}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            result.dm_fiber <= 2 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            纖維乾物比 (≤2%)
+                          </div>
+                          <div className={`text-xl font-bold ${result.dm_fiber <= 2 ? 'text-green-600' : 'text-red-600'}`}>
+                            {result.dm_fiber}%
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                        </div>
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          (() => {
+                            if (!formData.phosphorus_percent) return 'from-gray-100/60 to-gray-200/60 border-gray-300/30 hover:shadow-gray-200/20'
+                            // 假設 1% 磷含量約等於 300mg/kcal，所以 <350mg/kcal 約為 <1.2%
+                            return formData.phosphorus_percent <= 1.2
+                              ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                              : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                          })()
+                        }`} style={{animationDelay: '0.4s'}}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            (() => {
+                              if (!formData.phosphorus_percent || !formData.calories_per_100g) return 'text-gray-600'
+                              // 正確公式：磷含量（mg/100kcal） = 磷含量(mg/100g) ÷ (熱量(kcal/100g) ÷ 100)
+                              // 磷含量(mg/100g) = 磷百分比 × 1000
+                              const phosphorusMg100g = formData.phosphorus_percent * 1000
+                              const phosphorusMg100kcal = phosphorusMg100g / (formData.calories_per_100g / 100)
+                              return phosphorusMg100kcal < 350 ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            磷含量 (&lt;350mg/100kcal)
+                          </div>
+                          <div className={`text-xl font-bold ${
+                            (() => {
+                              if (!formData.phosphorus_percent || !formData.calories_per_100g) return 'text-gray-600'
+                              const phosphorusMg100g = formData.phosphorus_percent * 1000
+                              const phosphorusMg100kcal = phosphorusMg100g / (formData.calories_per_100g / 100)
+                              return phosphorusMg100kcal < 350 ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            {(formData.phosphorus_percent && formData.calories_per_100g) ? `${Math.round((formData.phosphorus_percent * 1000) / (formData.calories_per_100g / 100))}mg/100kcal` : '未提供'}
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                        </div>
+                        <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                          (() => {
+                            if (!result.calcium_phosphorus_ratio) return 'from-gray-100/60 to-gray-200/60 border-gray-300/30 hover:shadow-gray-200/20'
+                            return (result.calcium_phosphorus_ratio >= 1.1 && result.calcium_phosphorus_ratio <= 1.8)
+                              ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                              : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                          })()
+                        }`} style={{animationDelay: '0.5s'}}>
+                          <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                            (() => {
+                              if (!result.calcium_phosphorus_ratio) return 'text-gray-600'
+                              return (result.calcium_phosphorus_ratio >= 1.1 && result.calcium_phosphorus_ratio <= 1.8) ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            鈣磷比 (1.1-1.8)
+                          </div>
+                          <div className={`text-xl font-bold ${
+                            (() => {
+                              if (!result.calcium_phosphorus_ratio) return 'text-gray-600'
+                              return (result.calcium_phosphorus_ratio >= 1.1 && result.calcium_phosphorus_ratio <= 1.8) ? 'text-green-600' : 'text-red-600'
+                            })()
+                          }`}>
+                            {result.calcium_phosphorus_ratio ? `${result.calcium_phosphorus_ratio.toFixed(2)}:1` : '未提供'}
+                          </div>
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Calorie Ratios - Only show if calorie data is available */}
+                    {(result.total_calories || result.protein_calorie_ratio || result.fat_calorie_ratio || result.carbohydrate_calorie_ratio) && (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-foreground animate-slide-up">熱量比分析</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {/* 整體熱量顯示 - 作為第一欄 */}
+                          {result.total_calories && (
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300 hover:shadow-blue/20 p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative">
+                              <div className="text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 text-blue-600">
+                                整體熱量
+                              </div>
+                              <div className="text-xl font-bold text-blue-600">
+                                {result.total_calories} kcal
+                              </div>
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                            </div>
+                          )}
+                          {result.protein_calorie_ratio && (
+                            <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                              result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 60
+                                ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                                : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                            }`}>
+                              <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                                result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 60 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                蛋白質熱量比 (45-60%)
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                result.protein_calorie_ratio >= 45 && result.protein_calorie_ratio <= 60 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {result.protein_calorie_ratio}%
+                              </div>
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                            </div>
+                          )}
+                          {result.fat_calorie_ratio && (
+                            <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                              result.fat_calorie_ratio >= 30 && result.fat_calorie_ratio <= 50
+                                ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                                : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                            }`}>
+                              <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                                result.fat_calorie_ratio >= 30 && result.fat_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                脂肪熱量比 (30-50%)
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                result.fat_calorie_ratio >= 30 && result.fat_calorie_ratio <= 50 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {result.fat_calorie_ratio}%
+                              </div>
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                            </div>
+                          )}
+                          {result.carbohydrate_calorie_ratio && (
+                            <div className={`bg-gradient-to-br p-4 rounded-2xl border hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in group relative ${
+                              result.carbohydrate_calorie_ratio <= 10
+                                ? 'from-green-50 to-green-100 border-green-300 hover:shadow-green/20'
+                                : 'from-red-50 to-red-100 border-red-300 hover:shadow-red/20'
+                            }`}>
+                              <div className={`text-xs font-medium mb-1 group-hover:opacity-80 transition-colors duration-300 ${
+                                result.carbohydrate_calorie_ratio <= 10 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                碳水熱量比 (≤10%)
+                              </div>
+                              <div className={`text-xl font-bold ${
+                                result.carbohydrate_calorie_ratio <= 10 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {result.carbohydrate_calorie_ratio}%
+                              </div>
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-lg"></div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Trial CTA - Only show after calculation */}
+                    <div className="pt-6 border-t border-gray-200">
+                      <div className="glass rounded-2xl p-6 border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 text-center">
+                        <h3 className="text-lg font-semibold text-foreground mb-2">想要保存這些計算結果？</h3>
+                        <p className="text-muted-foreground mb-4 text-sm">
+                          註冊帳號即可保存計算記錄、管理貓咪資訊，並享受完整功能
+                        </p>
+                        <div className="flex gap-3 justify-center">
+                          <Button asChild className="bg-gradient-to-r from-primary to-accent text-white hover:opacity-90">
+                            <Link href="/auth/register">
+                              立即註冊
+                            </Link>
+                          </Button>
+                          <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
+                            <Link href="/auth/login">
+                              已有帳號
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                ) : (
+                  <div className="text-center py-12 animate-scale-in">
+                    <div className="relative mb-8">
+                      <div className="w-16 h-16 glass rounded-full flex items-center justify-center mx-auto animate-float border-primary/30">
+                        🧮
+                      </div>
+                      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-20 h-20 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-2xl"></div>
+                    </div>
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      準備開始計算
+                    </h3>
+                    <p className="text-muted-foreground">
+                      填寫表單並點擊「開始計算」來查看結果
+                    </p>
+                  </div>
+                )}
+        </div>
+
+      </div>
+    </div>
+  )
+}
