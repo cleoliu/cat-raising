@@ -74,11 +74,12 @@ export const utcToTaiwanDateTime = (utcDateString: string): string => {
 
 /**
  * Convert Taiwan datetime-local to UTC for storage
+ * Correctly handles timezone conversion by treating input as UTC+8
  */
 export const taiwanDateTimeToUtc = (taiwanDateTime: string): string => {
-  const localDate = new Date(taiwanDateTime)
-  // Subtract 8 hours to convert Taiwan time to UTC
-  const utcDate = new Date(localDate.getTime() - (8 * 60 * 60 * 1000))
+  // Parse as UTC time first, then subtract 8 hours to get the correct UTC time
+  // This ensures we treat the input as Taiwan time regardless of the browser's timezone
+  const utcDate = new Date(taiwanDateTime + '+08:00')
   return utcDate.toISOString()
 }
 
