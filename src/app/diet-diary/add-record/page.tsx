@@ -354,7 +354,6 @@ function AddRecordContent() {
           endpoint = '/api/water-records'
           requestBody = {
             ...requestBody,
-            record_date: formData.record_time.split('T')[0], // Extract date part (still in Taiwan timezone for date)
             record_time: formData.record_time + ':00+08:00', // Store as Taiwan time with timezone
             water_amount: formData.water_amount ? parseFloat(formData.water_amount) : null,
             water_type: formData.water_type,

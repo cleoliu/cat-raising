@@ -52,10 +52,10 @@ export async function GET(request: NextRequest) {
 
     // Filter by date range if specified
     if (dateFrom) {
-      query = query.gte('record_date', dateFrom)
+      query = query.gte('record_time', dateFrom)
     }
     if (dateTo) {
-      query = query.lte('record_date', dateTo)
+      query = query.lte('record_time', dateTo)
     }
 
     const { data, error } = await query
@@ -108,17 +108,17 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     const {
       cat_id,
-      record_date,
-      record_time = new Date().toISOString(),
+      record_date, // 保留以支援舊版相容，但不再必要
+      record_time, // 改為必要欄位
       water_amount,
       water_type = 'tap_water',
       water_source,
       notes
     } = body
 
-    if (!cat_id || !record_date) {
+    if (!cat_id || !record_time) {
       return NextResponse.json(
-        { error: 'Missing required fields: cat_id, record_date' }, 
+        { error: 'Missing required fields: cat_id, record_time' }, 
         { status: 400 }
       )
     }
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user.id,
         cat_id,
-        record_date,
+        record_date: record_date || null, // 可選欄位，向前相容
         record_time,
         water_amount: water_amount ? parseFloat(water_amount) : null,
         water_type,

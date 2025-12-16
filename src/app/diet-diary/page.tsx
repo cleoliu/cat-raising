@@ -8,10 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/BottomNav'
 import CatAvatar from '@/components/CatAvatar'
-import { Plus, ChevronLeft, ChevronRight, Edit2, Trash2, MoreVertical } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react'
 import Image from 'next/image'
-import { getCurrentTaiwanDateString } from '@/lib/dateUtils'
-import type { User } from '@supabase/supabase-js'
+import { getCurrentTaiwanDateString, taiwanDateToUtcRange } from '@/lib/dateUtils'
 
 interface Cat {
   id: string
@@ -80,8 +79,8 @@ export default function DietDiaryPage() {
   const loadRecords = async (userId: string, date: string, catId: string = 'all') => {
     try {
       // Load all diet records for the selected date
-      const startOfDay = `${date}T00:00:00.000Z`
-      const endOfDay = `${date}T23:59:59.999Z`
+      // Convert Taiwan date to proper UTC range for database queries
+      const { startOfDay, endOfDay } = taiwanDateToUtcRange(date)
       
       // Get auth token for API requests
       const { data: { session } } = await supabase.auth.getSession()
@@ -104,7 +103,7 @@ export default function DietDiaryPage() {
         fetch(`/api/feeding-records?date_from=${startOfDay}&date_to=${endOfDay}${catQuery}${cacheBuster}`, { 
           headers: { ...authHeaders, 'Cache-Control': 'no-cache' }
         }),
-        fetch(`/api/water-records?date_from=${date}&date_to=${date}${catQuery}${cacheBuster}`, { 
+        fetch(`/api/water-records?date_from=${startOfDay}&date_to=${endOfDay}${catQuery}${cacheBuster}`, { 
           headers: { ...authHeaders, 'Cache-Control': 'no-cache' }
         }),
         fetch(`/api/supplement-records?date_from=${startOfDay}&date_to=${endOfDay}${catQuery}${cacheBuster}`, { 
