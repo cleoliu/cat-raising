@@ -103,13 +103,13 @@ export const getCurrentTaiwanDateString = (): string => {
 export const taiwanDateToUtcRange = (taiwanDate: string): { startOfDay: string, endOfDay: string } => {
   // Create Taiwan date at start of day (00:00:00)
   const startOfDayTaiwan = new Date(`${taiwanDate}T00:00:00`)
-  // Add 8 hours to convert Taiwan time to UTC (Taiwan is UTC+8)
-  const startOfDayUtc = new Date(startOfDayTaiwan.getTime() + (8 * 60 * 60 * 1000))
+  // Subtract 8 hours to convert Taiwan time to UTC (Taiwan is UTC+8)
+  const startOfDayUtc = new Date(startOfDayTaiwan.getTime() - (8 * 60 * 60 * 1000))
   
   // Create Taiwan date at end of day (23:59:59.999)
   const endOfDayTaiwan = new Date(`${taiwanDate}T23:59:59.999`)
-  // Add 8 hours to convert Taiwan time to UTC
-  const endOfDayUtc = new Date(endOfDayTaiwan.getTime() + (8 * 60 * 60 * 1000))
+  // Subtract 8 hours to convert Taiwan time to UTC
+  const endOfDayUtc = new Date(endOfDayTaiwan.getTime() - (8 * 60 * 60 * 1000))
   
   return {
     startOfDay: startOfDayUtc.toISOString(),
