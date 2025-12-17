@@ -42,3 +42,6 @@ next-env.d.ts
 
 # auto-generated files
 src/lib/version.generated.ts
+
+# Claude settings
+.claude/settings.local.json

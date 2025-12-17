@@ -77,10 +77,14 @@ export const utcToTaiwanDateTime = (utcDateString: string): string => {
  * Correctly handles timezone conversion by treating input as UTC+8
  */
 export const taiwanDateTimeToUtc = (taiwanDateTime: string): string => {
-  // Parse as UTC time first, then subtract 8 hours to get the correct UTC time
-  // This ensures we treat the input as Taiwan time regardless of the browser's timezone
-  const utcDate = new Date(taiwanDateTime + '+08:00')
-  return utcDate.toISOString()
+  const [datePart, timePart] = taiwanDateTime.split('T')
+  const [year, month, day] = datePart.split('-').map(Number)
+  const [hour, minute, second = 0] = timePart.split(':').map(Number)
+  
+  const taiwanDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second))
+  taiwanDate.setUTCHours(taiwanDate.getUTCHours() - 8)
+  
+  return taiwanDate.toISOString()
 }
 
 /**
