@@ -407,8 +407,8 @@ function AddRecordContent() {
         throw new Error(errorData.error || `Failed to ${isEditMode ? 'update' : 'create'} record`)
       }
 
-      // Success - redirect back to diet diary
-      router.push('/diet-diary')
+      // Success - redirect back to diet diary with refresh parameter
+      router.push('/diet-diary?refresh=true')
     } catch (error: any) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} record:`, error)
       alert(`${isEditMode ? '更新' : '新增'}記錄失敗：` + error.message)

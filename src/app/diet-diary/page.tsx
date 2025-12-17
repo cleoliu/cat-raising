@@ -49,6 +49,9 @@ export default function DietDiaryPage() {
   const [selectedCatId, setSelectedCatId] = useState<string>('all')
   const [selectedDate, setSelectedDate] = useState<string>(getCurrentTaiwanDateString())
   const [loading, setLoading] = useState(true)
+  const [recordsLoading, setRecordsLoading] = useState(false) // 專門用於記錄載入的狀態
+  const [user, setUser] = useState<any>(null) // 快取用戶資料
+  const [refreshTrigger, setRefreshTrigger] = useState(0) // 用於強制重新載入
   const [dailySummary, setDailySummary] = useState({
     feeding_count: 0,
     water_intake: 0,
@@ -112,9 +115,9 @@ export default function DietDiaryPage() {
       ])
 
       const [feedingRecords, waterRecords, supplementRecords] = await Promise.all([
-        feedingResponse.ok ? feedingResponse.json() : [],
-        waterResponse.ok ? waterResponse.json() : [],
-        supplementResponse.ok ? supplementResponse.json() : []
+        feedingResponse.ok ? feedingResponse.json().catch(() => []) : [],
+        waterResponse.ok ? waterResponse.json().catch(() => []) : [],
+        supplementResponse.ok ? supplementResponse.json().catch(() => []) : []
       ])
 
       // Combine all records and format them for display
@@ -243,39 +246,60 @@ export default function DietDiaryPage() {
     } catch (error) {
       console.error('Error loading diet records:', error)
       setRecords([])
+      setDailySummary({
+        feeding_count: 0,
+        water_intake: 0,
+        supplement_count: 0,
+        medication_count: 0
+      })
     }
   }
 
+  // 處理從 URL 參數來的刷新請求
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser()
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('refresh') === 'true') {
+      setRefreshTrigger(prev => prev + 1)
+      // 清除 URL 參數
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
+  // 初始載入用戶和貓咪資料（只執行一次）
+  useEffect(() => {
+    const initializeData = async () => {
+      const { data: { user: authUser }, error } = await supabase.auth.getUser()
       
-      if (error || !user) {
+      if (error || !authUser) {
         router.push('/auth/login')
         return
       }
 
-      await Promise.all([
-        loadCats(user.id),
-        loadRecords(user.id, selectedDate, selectedCatId)
-      ])
+      setUser(authUser) // 快取用戶資料
+      
+      // 只載入貓咪資料，記錄會在下個 useEffect 載入
+      await loadCats(authUser.id)
       setLoading(false)
     }
 
-    getUser()
-  }, [router, selectedDate, selectedCatId])
+    initializeData()
+  }, [router]) // 移除不必要的依賴
 
-  // 當選擇貓咪改變時重新載入記錄
+  // 當日期或貓咪篩選改變時重新載入記錄
   useEffect(() => {
-    const reloadRecords = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user && !loading) {
+    if (!user || loading) return // 等待用戶資料載入完成
+
+    const loadRecordsWithLoading = async () => {
+      setRecordsLoading(true) // 顯示載入狀態但不阻擋整個頁面
+      try {
         await loadRecords(user.id, selectedDate, selectedCatId)
+      } finally {
+        setRecordsLoading(false)
       }
     }
     
-    reloadRecords()
-  }, [selectedCatId, selectedDate, loading])
+    loadRecordsWithLoading()
+  }, [selectedCatId, selectedDate, user, loading, refreshTrigger])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString + 'T00:00:00+08:00') // 確保使用台灣時區
@@ -324,11 +348,30 @@ export default function DietDiaryPage() {
       return
     }
 
+    // 樂觀更新：立即從 UI 移除記錄
+    const originalRecords = [...records]
+    const updatedRecords = records.filter(r => r.id !== record.id)
+    setRecords(updatedRecords)
+    
+    // 立即更新統計資料
+    const feedingCount = updatedRecords.filter(r => r.record_type === 'feeding').length
+    const waterIntake = updatedRecords
+      .filter(r => r.record_type === 'water')
+      .reduce((sum, r) => sum + (r.amount || 0), 0)
+    const supplementCount = updatedRecords.filter(r => r.record_type === 'supplement').length
+    const medicationCount = updatedRecords.filter(r => r.record_type === 'medication').length
+
+    setDailySummary({
+      feeding_count: feedingCount,
+      water_intake: Math.round(waterIntake),
+      supplement_count: supplementCount,
+      medication_count: medicationCount
+    })
+
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        console.error('No valid session for API requests')
-        return
+        throw new Error('No valid session for API requests')
       }
 
       const authHeaders = {
@@ -361,14 +404,28 @@ export default function DietDiaryPage() {
         throw new Error(`刪除失敗 (${response.status}): ${errorData}`)
       }
 
-      // Reload records after deletion
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await loadRecords(user.id, selectedDate, selectedCatId)
-      }
+      // 成功刪除，不需要額外動作（已經樂觀更新了）
     } catch (error: unknown) {
       console.error('Error deleting record:', error)
       alert('刪除記錄失敗：' + (error instanceof Error ? error.message : String(error)))
+      
+      // 錯誤時恢復原始狀態
+      setRecords(originalRecords)
+      
+      // 恢復統計資料
+      const originalFeedingCount = originalRecords.filter(r => r.record_type === 'feeding').length
+      const originalWaterIntake = originalRecords
+        .filter(r => r.record_type === 'water')
+        .reduce((sum, r) => sum + (r.amount || 0), 0)
+      const originalSupplementCount = originalRecords.filter(r => r.record_type === 'supplement').length
+      const originalMedicationCount = originalRecords.filter(r => r.record_type === 'medication').length
+
+      setDailySummary({
+        feeding_count: originalFeedingCount,
+        water_intake: Math.round(originalWaterIntake),
+        supplement_count: originalSupplementCount,
+        medication_count: originalMedicationCount
+      })
     }
   }
 
@@ -524,7 +581,12 @@ export default function DietDiaryPage() {
 
       {/* Records List */}
       <div className="px-4">
-        {records.length === 0 ? (
+        {recordsLoading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary/30 border-t-primary"></div>
+          </div>
+        )}
+        {!recordsLoading && records.length === 0 ? (
           <Card className="glass border-primary/20 animate-scale-in">
             <CardContent className="py-12">
               <div className="text-center">
@@ -549,7 +611,7 @@ export default function DietDiaryPage() {
               </div>
             </CardContent>
           </Card>
-        ) : (
+        ) : !recordsLoading ? (
           <div className="space-y-3">
             {records.map((record, index) => (
               <Card key={record.id} className="glass border-primary/20 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 hover:scale-[1.02] animate-slide-up" style={{animationDelay: `${index * 0.1}s`}}>
@@ -703,7 +765,7 @@ export default function DietDiaryPage() {
               </Card>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Floating Add Button */}
