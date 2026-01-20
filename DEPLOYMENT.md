@@ -70,7 +70,7 @@ public/
 
 #### 基本認證設定
 
-1. 在 Supabase Dashboard 前往 "Authentication" → "Settings"
+1. 在 Supabase Dashboard 前往 "Authentication" → "URL Configuration"
 2. 在 "Site URL" 設置您的網域：`https://your-domain.vercel.app`
 3. 在 "Redirect URLs" 新增：`https://your-domain.vercel.app/dashboard`
 
@@ -79,17 +79,14 @@ public/
 ##### 步驟 1：Google Cloud Console 設置
 
 1. **建立 Google Cloud 專案**（如果還沒有）
-
    - 前往 [Google Cloud Console](https://console.cloud.google.com/)
    - 建立新專案或選擇現有專案
 
 2. **啟用 Google+ API**
-
    - 在左側導航中選擇「API 和服務」→「資料庫」
    - 搜尋並啟用「Google+ API」
 
 3. **建立 OAuth 2.0 憑證**
-
    - 前往「API 和服務」→「憑證」
    - 點擊「建立憑證」→「OAuth 2.0 用戶端 ID」
    - 選擇應用程式類型：「網路應用程式」
@@ -108,7 +105,6 @@ public/
 ##### 步驟 2：Supabase 中啟用 Google 認證
 
 1. **前往認證提供商設定**
-
    - 在 Supabase Dashboard 前往「Authentication」→「Providers」
    - 找到「Google」提供商並點擊
 
@@ -230,6 +226,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 3. **更新 Redirect URLs**
    - 在同一頁面，確認 "Redirect URLs" 包含：
+
    ```
    https://your-actual-domain.vercel.app/dashboard
    ```
@@ -330,22 +327,18 @@ npm run type-check
 2. **常見錯誤和解決方案**
 
    **錯誤：`redirect_uri_mismatch`**
-
    - 檢查 Google Cloud Console 的授權重新導向 URI
    - 確保 URI 完全匹配：`https://your-project.supabase.co/auth/v1/callback`
 
    **錯誤：`Access blocked`**
-
    - 確認 Google+ API 已啟用
    - 檢查 OAuth 同意畫面設定
 
    **錯誤：登入成功但未重定向到 dashboard**
-
    - 檢查 Supabase Authentication Settings 中的 Redirect URLs
    - 確認 `https://your-domain.vercel.app/dashboard` 已添加
 
    **錯誤：生產環境 Google 登入後跳轉到 localhost**
-
    - 這是 Supabase Site URL 設定錯誤導致
    - 前往 Supabase Dashboard → Authentication → Settings
    - 確認 "Site URL" 設為：`https://your-domain.vercel.app`

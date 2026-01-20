@@ -7,12 +7,15 @@ const nextConfig: NextConfig = {
     forceSwcTransforms: true,
   },
 
-  // 生成唯一的 build ID 來強制客戶端更新
+  // 使用 Git commit hash 作為穩定的 build ID
   generateBuildId: async () => {
-    // 使用時間戳和隨機數生成唯一的 build ID
-    const timestamp = Date.now()
-    const random = Math.random().toString(36).substring(7)
-    return `build-${timestamp}-${random}`
+    // 在生產環境使用 Git commit hash，確保相同代碼生成相同的 build ID
+    if (process.env.VERCEL_GIT_COMMIT_SHA) {
+      return process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 12)
+    }
+    
+    // 開發環境回退到預設值
+    return null
   },
   
   // 設定標頭以控制緩存
